@@ -14,13 +14,46 @@ Output:
 * /path/to/npz_dir/#row-#col_tile: the output npz file with morphological information for the given tile
 * patID_report_file: output report with number of nuclei per tile
 
+## II pipe
+```
+$ path/to/anaconda/bin/python3.7 pipe2.stitching.py /path/to/npz_dir 512 id
+```
+Input: 
+* /path/to/npz_dir: path to the directory containing the .npz files with morphological information
+* 512: linear size of the tiles
+* id: the id uniquely associated to the WSI
 
-## Input
+## III pipe
+```
+$ path/to/anaconda/bin/python3.7 pipe3.makeGraph.py /path/to/id_data.npz {id}
+```
+Input:
+* /path/to/id_data.npz: file containing the morphological information of all the nuclei in the WSI
+* {id}: the id uniquely associated to the WSI
 
-* list of h5 files with segmented nuclei
-* list of tif images matching the h5 files
+## IV pipe
+```
+$ path/to/anaconda/bin/python3.7 pipe4.walk.py /path/to/id_data.npz /path/to/id_graph.npz {feature} {steps} {id}
+```
+Input:
+* /path/to/id_data.npz: file containing the morphological information of all the nuclei in the WSI
+* /path/to/id_graph.npz: file containing the sparse adjacency matrix of the WSI
+* {feature}: one of (area, intensity, perimeter, eccentricity, solidity)
+* {steps}: extension of the random walk on the graph (ie 1000)
+* {id}: the id uniquely associated to the WSI
 
-## Parameters
+## V pipe
+```
+$ path/to/anaconda/bin/python3.7 pipe5.drawHeatMap.py path/to/npy/{id}-{feature}-walkhistory.npy /path/to/id_data.npz {feature} {step} {id} {heatmap_scale} {feature_scale}
+```
+Input:
+* path/to/npy/{id}-{feature}-walkhistory.npy: file containing the random walk information  
+* /path/to/id_data.npz: file containing the morphology information 
+* {feature}: one of (area, intensity, perimeter, eccentricity, solidity)
+* {step}: extension of the random walk at which to plot the heatmap (it must be smaller than {steps} in pipe IV) 
+* {id}: the id uniquely associated to the WSI 
+* {heatmap_scale}: one of (linear, percentiles) 
+* {feature_scale}: one of (linear, logarithmic)
 
 * (input) directory containing h5 files
 * (input) directory containing tif files
