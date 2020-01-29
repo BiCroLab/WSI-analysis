@@ -1,0 +1,14 @@
+npz/
+img/
+heatmap_module/npy
+heatmap_module/npz
+heatmap_module/png
+*.pdf
+*.png
+*.npz
+*.edgelist
+*.csv
+*.txt
+*.tsv
+*.dat
+*~
