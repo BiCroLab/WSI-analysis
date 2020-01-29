@@ -1,4 +1,6 @@
-# Area visualization
+# Heatmap visualization of the whole slide graph representation 
+
+This pipeline makes use of segmented nuclei and their morphological attributes in order to visualize the WSI as a graph whose nodes are the nuclei and whose edges are the UMAP encoded distances between nuclei. Each node is color coded based on the value of its feature (area, intensity, perimeter, eccentricity, solidity).
 
 ## Input
 
