@@ -1,6 +1,13 @@
-# Heatmap visualization of the whole slide graph representation 
+# Heatmap visualization of the whole slide graph-representation 
 
 This pipeline makes use of segmented nuclei and their morphological attributes in order to visualize the WSI as a graph whose nodes are the nuclei and whose edges are the UMAP encoded distances between nuclei. Each node is color coded based on the value of its feature (area, intensity, perimeter, eccentricity, solidity).
+
+## I pipe
+```
+$ path/to/anaconda/bin/python3.7 pipe1.img2features.py /path/to/h5_dir/segmented_#row-#col_tile.h5 /path/to/tif_dir/#row-#col_tile.tif /path/to/npz_dir/#row-#col_tile patID_report_file
+```
+* Input: /path/to/h5_dir/segmented_#row-#col_tile.h5 /path/to/tif_dir/#row-#col_tile.tif
+* Output: /path/to/npz_dir/#row-#col_tile patID_report_file
 
 ## Input
 
