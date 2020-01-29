@@ -1,2 +1,2 @@
-# WSI_analysis
+# WSI analysis
 Pipeline to analyze WSI
