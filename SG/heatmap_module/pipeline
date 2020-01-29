@@ -29,8 +29,8 @@ mkdir -p ${npz_dir}		# create if it does not exist
     for steps in 1 10 100 1000;
     do
 	echo ${steps}
-	parallel "${path2anaconda}/bin/python3.7 pipe5.drawHeatMap.py ./npy/${id}-{1}-walkhistory.npy ./npz/${id}_data.npz {1} ${steps} ${id} {2} linear" ::: area intensity perimeter eccentricity solidity ::: linear percentiles
-	parallel "${path2anaconda}/bin/python3.7 pipe5.drawHeatMap.py ./npy/${id}-{1}-walkhistory.npy ./npz/${id}_data.npz {1} ${steps} ${id} {2} logarithmic" ::: area intensity perimeter eccentricity solidity ::: linear percentiles
+	parallel "${path2anaconda}/bin/python3.7 pipe5.drawHeatMap.py ./npy/${id}-{1}-walkhistory.npy ./npz/${id}_data.npz {1} ${steps} ${id} {2} linear" ::: area intensity perimeter eccentricity solidity ::: linear deciles
+	parallel "${path2anaconda}/bin/python3.7 pipe5.drawHeatMap.py ./npy/${id}-{1}-walkhistory.npy ./npz/${id}_data.npz {1} ${steps} ${id} {2} logarithmic" ::: area intensity perimeter eccentricity solidity ::: linear deciles
     done
     echo Done with pipe5
 
