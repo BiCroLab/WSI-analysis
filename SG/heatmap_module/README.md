@@ -9,6 +9,7 @@ $ path/to/anaconda/bin/python3.7 pipe1.img2features.py /path/to/h5_dir/segmented
 Input: 
 * /path/to/h5_dir/segmented_#row-#col_tile.h5: is the segmented tile with the row-col location on the WSI specified in the filename
 * /path/to/tif_dir/#row-#col_tile.tif: is the tif file matching the segmented tile with the row-col location on the WSI specified in the filename
+
 Output: 
 * /path/to/npz_dir/#row-#col_tile: the output npz file with morphological information for the given tile
 * patID_report_file: output report with number of nuclei per tile
