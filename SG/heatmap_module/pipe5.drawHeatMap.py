@@ -20,6 +20,7 @@ steps = int(sys.argv[4]) # correspond to the size of the nuclei ensemble average
 ID = sys.argv[5] #patient ID
 modality = sys.argv[6] #linear or deciles division of the feature range
 scale = sys.argv[7] #linear of logarithmic scale of the attribute values
+flip = sys.argv[8] # if figure needs to be flipped vertically: can be flip or noflip
 
 history = np.load(npyfilename,allow_pickle=True)
 
@@ -29,7 +30,6 @@ elif scale == 'logarithmic':
     attribute = np.log2(np.mean(history[:,:steps],axis=1))
     attribute = attribute[np.isfinite(attribute)]
     
-
 ##########################################                       
 # Fit a normal distribution to the data:
 mu, std = norm.fit(attribute) # you could also fit to a lognorma the original data
@@ -49,6 +49,10 @@ plt.close()
 # create empty list for node colors
 G = nx.Graph()
 pos = np.load(npzfilename,allow_pickle=True)['XY']
+
+if flip == 'flip':
+    pos[:,1] = [ -pos[ind,1] for ind in range(pos.shape[0]) ]
+
 G.add_nodes_from(range(len(attribute)))
 
 # color attribute based on percentiles, deciles or quartiles ...
