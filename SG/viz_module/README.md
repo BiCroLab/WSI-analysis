@@ -1,6 +1,6 @@
 # Visualize WSI on local server
 
-Use vips to create a pyramid tiff file from a given DAPI WSI tiff file.
+Use [vips](https://github.com/libvips/libvips) to create a pyramid tiff file from a given DAPI WSI tiff file.
 ```
 $ vips tiffsave ${img} ${pyramid} --tile --tile-width=256 --tile-height=256 --pyramid
 ```
