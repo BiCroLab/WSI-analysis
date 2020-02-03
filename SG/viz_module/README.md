@@ -12,3 +12,9 @@ If this viewing application is installed on a server that also hosts the whole-s
 ```
 $ path/to/python3 path/to/openslide-python/examples/deepzoom/deepzoom_multiserver.py -Q 100 path/to/WSI/directory
 ```
+
+## Generate jpg from tif
+We use the [bioimageconverter](https://bitbucket.org/dimin/bioimageconvert/wiki/Home) tool from BisQue
+```
+bash tif2jpeg.sh /path/to/tif/file
+```
