@@ -66,7 +66,12 @@ sns.set(style='white', rc={'figure.figsize':(50,50)})
 nx.draw_networkx_nodes(G, pos, alpha=0.5,node_color=node_color, node_size=1,cmap='viridis')
 
 print('saving graph')
+
+plt.margins(0,0)
+plt.gca().xaxis.set_major_locator(plt.NullLocator())
+plt.gca().yaxis.set_major_locator(plt.NullLocator())
+
 plt.axis('off')
-plt.savefig("./png/"+str(ID)+"_heatmap-"+str(feature)+"-"+str(scale)+"_scale""-"+str(modality)+"_partition-nn"+str(steps)+".png", dpi=200) # save as png
+plt.savefig("./png/"+str(ID)+"_heatmap-"+str(feature)+"-"+str(scale)+"_scale""-"+str(modality)+"_partition-nn"+str(steps)+".png", dpi=200,bbox_inches = 'tight', pad_inches = 0.5) # save as png
 plt.close()
 
