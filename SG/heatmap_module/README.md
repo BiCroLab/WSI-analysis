@@ -37,6 +37,9 @@ Input:
 Output:
 * ```/path/to/id_graph.npz``` file containing the sparse adjacency matrix of the WSI
 
+In case of HE-stained WSI we use QuPath to segment with an automated workflow that can process all svs files.
+The output data is then the input to pipe3.makeGraph.fromHE.py which produces the network graph.
+
 ## IV pipe
 ```
 $ path/to/anaconda/bin/python3.7 pipe4.walk.py /path/to/id_data.npz /path/to/id_graph.npz {feature} {steps} {id}
