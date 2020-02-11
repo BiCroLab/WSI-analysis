@@ -20,18 +20,18 @@ steps = sys.argv[4] #number of steps of the random walker
 
 XY = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(5,6))
 SS = normalize(mat_XY, norm='l1', axis=1) #create the row-stochastic matrix
-
 if feature == 'area':
-    vec = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(7))
+    vec = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(7,))
 elif feature == 'perimeter':
-    vec = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(8))
+    vec = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(8,))
 elif feature == 'circularity':
-    vec = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(9))
+    vec = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(9,))
 elif feature == 'eccentricity':
-    vec = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(12))
+    vec = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(12,))
 elif feature == 'intensity':
-    vec = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(13))
+    vec = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(13,))
 
+vec = np.reshape(vec,(vec.shape[0],1))
 history = vec
 nn = int(steps)
 for counter in range(nn):
