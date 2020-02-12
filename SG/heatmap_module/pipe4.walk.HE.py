@@ -15,11 +15,14 @@ warnings.filterwarnings('ignore')
 
 filename = sys.argv[1] #MN35B__953995-35B.svs.Detections.txt
 mat_XY = sparse.load_npz(sys.argv[2]) #MN35B__953995-35B.svs.Detections.txt_graph.npz
+print(mat_XY.shape)
+
 feature = sys.argv[3] #Area Perimeter Circularity Eccentricity Intensity
-steps = sys.argv[4] #number of steps of the random walker 
+steps = int(sys.argv[4]) #number of steps of the random walker 
 
 XY = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(5,6))
 SS = normalize(mat_XY, norm='l1', axis=1) #create the row-stochastic matrix
+
 if feature == 'area':
     vec = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(7,))
 elif feature == 'perimeter':
@@ -32,11 +35,17 @@ elif feature == 'intensity':
     vec = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(13,))
 
 vec = np.reshape(vec,(vec.shape[0],1))
+
 history = vec
-nn = int(steps)
+nn = steps
 for counter in range(nn):
     vec = SS.dot(vec)
-    history = np.hstack((history,vec)) 
+    history = np.hstack((history,vec))
 
-filename = str(sys.argv[1])+'.'+str(feature)+'.walkhistory'    
-np.save(str(filename),history)
+if history.shape[0] == mat_XY.shape[0] and history.shape[1] == steps+1:
+    print("Saving history...")
+    filename = str(sys.argv[1])+'.'+str(feature)+'.walkhistory'    
+    np.save(str(filename),history)
+else:
+    print("Oops!  History is not in good shape. Check data or code...")
+

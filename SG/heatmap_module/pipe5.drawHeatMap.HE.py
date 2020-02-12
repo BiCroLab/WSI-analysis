@@ -21,6 +21,7 @@ ID = sys.argv[5] #patient ID
 modality = sys.argv[6] #linear or deciles division of the feature range
 scale = sys.argv[7] #linear of logarithmic scale of the attribute values
 flip = sys.argv[8] # if figure needs to be flipped vertically: can be flip or noflip
+outdir = sys.argv[9]
 
 history = np.load(npyfilename,allow_pickle=True)
 print(history.shape)
@@ -42,7 +43,7 @@ p = norm.pdf(x, mu, std)
 plt.plot(x, p, 'k', linewidth=2)
 title = "Fit results: mu = %.2f,  std = %.2f" % (mu, std)
 plt.title(title)
-plt.savefig("/media/garner1/hdd1/HE_lung-brain_WSI/HE_nuclei_segmentation/png/"+str(ID)+"_distro-"+str(feature)+"-"+str(scale)+"_scale"+"-nn"+str(steps)+".png") # save as png
+plt.savefig(outdir+'/'+str(ID)+"_distro-"+str(feature)+"-"+str(scale)+"_scale"+"-nn"+str(steps)+".png") # save as png
 plt.close()
 ###########################################
 
@@ -72,6 +73,6 @@ plt.gca().xaxis.set_major_locator(plt.NullLocator())
 plt.gca().yaxis.set_major_locator(plt.NullLocator())
 
 plt.axis('off')
-plt.savefig("/media/garner1/hdd1/HE_lung-brain_WSI/HE_nuclei_segmentation/png/"+str(ID)+"_heatmap-"+str(feature)+"-"+str(scale)+"_scale""-"+str(modality)+"_partition-nn"+str(steps)+".png", dpi=200,bbox_inches = 'tight', pad_inches = 0.5) # save as png
+plt.savefig(outdir+'/'+str(ID)+"_heatmap-"+str(feature)+"-"+str(scale)+"_scale""-"+str(modality)+"_partition-nn"+str(steps)+".png", dpi=200,bbox_inches = 'tight', pad_inches = 0.5) # save as png
 plt.close()
 
