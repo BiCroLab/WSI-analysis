@@ -33,6 +33,8 @@ elif feature == 'eccentricity':
     vec = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(12,))
 elif feature == 'intensity':
     vec = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(13,))
+if feature == 'cc':
+    vec = np.load(sys.argv[5],allow_pickle=True)
 
 vec = np.reshape(vec,(vec.shape[0],1))
 
