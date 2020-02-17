@@ -38,7 +38,7 @@ p = norm.pdf(x, mu, std)
 plt.plot(x, p, 'k', linewidth=2)
 title = "Fit results: mu = %.2f,  std = %.2f" % (mu, std)
 plt.title(title)
-plt.savefig("myCC_distro-"+str(scale)+"_scale"+".png") # save as png
+plt.savefig(npyfilename+".CC."+str(scale)+"_scale"+".png") # save as png
 plt.close()
 ###########################################
 
@@ -65,6 +65,6 @@ plt.gca().xaxis.set_major_locator(plt.NullLocator())
 plt.gca().yaxis.set_major_locator(plt.NullLocator())
 
 plt.axis('off')
-plt.savefig("myCC__"+str(scale)+"_scale-"+str(modality)+"_partition.png", dpi=200,bbox_inches = 'tight', pad_inches = 0.5) # save as png
+plt.savefig(npyfilename+".CC."+str(scale)+"_scale-"+str(modality)+"_partition.png", dpi=200,bbox_inches = 'tight', pad_inches = 0.5) # save as png
 plt.close()
 
