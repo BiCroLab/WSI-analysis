@@ -26,7 +26,25 @@ def main():
         local_connectivity=2.0,
         verbose=False
     )
+
     sparse.save_npz(sys.argv[1]+'_graph.npz',mat_XY)
+
+    A = mat_XY
+    degree = A.sum(axis=1) #calculate degree vector
+    np.savetxt(sys.argv[1]+'.degree', degree)
+
+    AA = A.dot(A)
+    AAA = A.dot(AA)  
+    d1 = AA.mean(axis=0) 
+    m = A.mean(axis=0)
+    d2 = np.power(m,2)
+
+    num = AAA.diagonal().reshape((1,A.shape[0]))
+    denom = np.asarray(d1-d2)
+    cc = np.divide(num,denom*A.shape[0]) 
+    
+    np.savetxt(sys.argv[1]+'.cc', cc)
+    
     
 if __name__=="__main__":
     main()
