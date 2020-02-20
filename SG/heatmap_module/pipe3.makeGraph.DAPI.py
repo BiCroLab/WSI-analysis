@@ -11,7 +11,8 @@ warnings.filterwarnings('ignore')
 def main():
     XY = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(5,6))
 
-    nn = int(np.log2(XY.shape[0])) #scale the nn logarithmically in the numb of nodes to have enough density of edges for clustering
+    # nn = int(np.log2(XY.shape[0])) #scale the nn logarithmically in the numb of nodes to have enough density of edges for clustering
+    nn = 5 # keep nn small or it will provide counterintuitive results for the clustering coefficient
     print('UMAP with nn='+str(nn))
     mat_XY = umap.umap_.fuzzy_simplicial_set(
         XY,
@@ -27,11 +28,11 @@ def main():
         verbose=False
     )
 
-    sparse.save_npz(sys.argv[1]+'_graph.npz',mat_XY)
+    sparse.save_npz(sys.argv[1]+'.nn'+str(nn)+'_graph.npz',mat_XY)
 
     A = mat_XY
     degree = A.sum(axis=1) #calculate degree vector
-    np.savetxt(sys.argv[1]+'.degree', degree)
+    np.savetxt(sys.argv[1]+'.nn'+str(nn)+'.degree', degree)
 
     AA = A.dot(A)
     AAA = A.dot(AA)  
@@ -43,7 +44,7 @@ def main():
     denom = np.asarray(d1-d2)
     cc = np.divide(num,denom*A.shape[0]) 
     
-    np.savetxt(sys.argv[1]+'.cc', cc)
+    np.savetxt(sys.argv[1]+'.nn'+str(nn)+'.cc', cc)
     
     
 if __name__=="__main__":

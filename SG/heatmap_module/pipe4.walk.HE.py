@@ -17,7 +17,7 @@ filename = sys.argv[1] #MN35B__953995-35B.svs.Detections.txt
 mat_XY = sparse.load_npz(sys.argv[2]) #MN35B__953995-35B.svs.Detections.txt_graph.npz
 print(mat_XY.shape)
 
-feature = sys.argv[3] #Area Perimeter Circularity Eccentricity Intensity
+feature = sys.argv[3] #Area Perimeter Circularity Eccentricity Intensity cc
 steps = int(sys.argv[4]) #number of steps of the random walker 
 
 XY = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(5,6))
@@ -34,10 +34,10 @@ elif feature == 'eccentricity':
 elif feature == 'intensity':
     vec = np.loadtxt(sys.argv[1], delimiter="\t",skiprows=True,usecols=(13,))
 if feature == 'cc':
-    vec = np.load(sys.argv[5],allow_pickle=True)
+    vec = np.loadtxt(sys.argv[5],delimiter=" ")
 
 vec = np.reshape(vec,(vec.shape[0],1))
-
+print(vec.shape)
 history = vec
 nn = steps
 for counter in range(nn):

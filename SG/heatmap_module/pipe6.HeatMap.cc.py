@@ -17,13 +17,14 @@ npyfilename = sys.argv[1] #'/home/garner1/Work/pipelines/graviti/heatmap_module/
 txtfilename = sys.argv[2] #'/home/garner1/Work/dataset/tissue2graph/ID57_data.txt'
 scale = sys.argv[3]
 modality = sys.argv[4]
+steps = int(sys.argv[5])
 
 cc = np.load(npyfilename,allow_pickle=True)
 print(cc.shape)
 if scale == 'linear':
-    attribute = cc
+    attribute = np.mean(cc[:,:steps],axis=1)
 elif scale == 'logarithmic':
-    attribute = np.log2(cc)
+    attribute = np.log2(np.mean(cc[:,:steps],axis=1))
     attribute = attribute[np.isfinite(attribute)]
     
 ##########################################                       
@@ -38,7 +39,7 @@ p = norm.pdf(x, mu, std)
 plt.plot(x, p, 'k', linewidth=2)
 title = "Fit results: mu = %.2f,  std = %.2f" % (mu, std)
 plt.title(title)
-plt.savefig(npyfilename+".CC."+str(scale)+"_scale"+".png") # save as png
+plt.savefig(npyfilename+".histo.cc."+str(scale)+"_scale-"+str(modality)+"_partition-nn"+str(steps)+".png") # save as png
 plt.close()
 ###########################################
 
@@ -65,6 +66,6 @@ plt.gca().xaxis.set_major_locator(plt.NullLocator())
 plt.gca().yaxis.set_major_locator(plt.NullLocator())
 
 plt.axis('off')
-plt.savefig(npyfilename+".CC."+str(scale)+"_scale-"+str(modality)+"_partition.png", dpi=200,bbox_inches = 'tight', pad_inches = 0.5) # save as png
+plt.savefig(npyfilename+".heatmap.cc."+str(scale)+"_scale-"+str(modality)+"_partition-nn"+str(steps)+".png", dpi=200,bbox_inches = 'tight', pad_inches = 0.5) # save as png
 plt.close()
 
