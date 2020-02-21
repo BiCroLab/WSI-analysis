@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+id=$1     # patient id
+stain=$2  #HE or DAPI
+steps=$3  # radius of the subgraph for averaging features
+if [ -d /usr/local/share/anaconda3 ]; then
+    path2anaconda=/usr/local/share/anaconda3/bin
+    echo The python executable directory is $path2anaconda
+fi
+if [ -d /home/garner1/miniconda3 ]; then
+    path2anaconda=/home/garner1/miniconda3/bin
+    echo The python executable directory is $path2anaconda
+fi
+
+#path2data=/media/garner1/hdd2/$stain/segmentation
+path2data=.
+
+if [ -f $path2data/${id}__*.txt.gz ]; then
+    # echo Make Graph
+    # /usr/bin/time -v $path2anaconda/python3.7 pipe3.makeGraph.fromQuPath.py $path2data/${id}__*.txt.gz
+    echo Make average windows
+    #ls -l $path2data/${id}__*{.txt.gz,.adj.npz,degree.gz,cc.gz}
+    /usr/bin/time -v $path2anaconda/python3.7 pipe4.walk.fromQuPath.py $path2data/${id}__*{.txt.gz,.adj.npz,degree.gz,cc.gz} $steps
+    echo Make heatmaps
+    /usr/bin/time -v parallel "$path2anaconda/python3.7 pipe5.drawHeatMap.fromQuPath.py $path2data/${id}__*{.npy,.txt.gz} 5 {} ${id} deciles linear noflip ./" ::: 1 10 100 1000
+else
+    echo $path2data/${id}__*.txt.gz does not exist!
+fi
