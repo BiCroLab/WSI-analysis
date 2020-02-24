@@ -36,12 +36,22 @@ def main():
 
     num = AAA.diagonal().reshape((1,A.shape[0]))
     denom = np.asarray(d1-d2)
-    cc = np.divide(num,denom*A.shape[0]) 
+    cc = np.divide(num,denom*A.shape[0]) #clustering coefficient
+
+    WW = A.tocoo(copy=True)
+    norma = A.sum()
+    rowdegree = np.asarray([degree[ind] for ind in WW.row]).squeeze()
+    coldegree = np.asarray([degree[ind] for ind in WW.col]).squeeze()
+    datamodel = rowdegree*coldegree*1.0/norma
+    nullmodel = sparse.csr_matrix((datamodel, (WW.row, WW.col)), shape=WW.shape)
+    M = A - nullmodel
+    modularity = M.sum(axis=1) #modularity
 
     np.savetxt(sys.argv[1]+'.nn'+str(nn)+'.degree.gz', degree)
     sparse.save_npz(sys.argv[1]+'.nn'+str(nn)+'.adj.npz',mat_XY)
     np.savetxt(sys.argv[1]+'.nn'+str(nn)+'.cc.gz', cc)
-    
+    np.savetxt(sys.argv[1]+'.nn'+str(nn)+'.modularity.gz', modularity)
+  
     
 if __name__=="__main__":
     main()

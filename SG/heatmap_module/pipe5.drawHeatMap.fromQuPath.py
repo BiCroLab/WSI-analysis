@@ -13,51 +13,29 @@ from scipy.stats import norm, zscore, poisson
 from sklearn.preprocessing import normalize
 warnings.filterwarnings('ignore')
 
-npyfilename = sys.argv[1] #'/home/garner1/Work/pipelines/graviti/heatmap_module/npy/ID57-area-walkhistory.npy'
-txtfilename = sys.argv[2] #'/home/garner1/Work/dataset/tissue2graph/ID57_data.txt'
-feature = int(sys.argv[3]) # 0:area,1:eccentricity,2:circularity,3:mean intensity,4:degree,5:cc
-steps = int(sys.argv[4]) # correspond to the size of the nuclei ensemble average: greater the #steps the larger the graph-neighbor-window over which the mean is taken
-ID = sys.argv[5] #patient ID
-modality = sys.argv[6] #linear or deciles division of the feature range
-scale = sys.argv[7] #linear of logarithmic scale of the attribute values
-flip = sys.argv[8] # if figure needs to be flipped vertically: can be flip or noflip
-outdir = sys.argv[9]
+npyfilename = sys.argv[1] # 'walkhistory.npy'
+txtfilename = sys.argv[2] #'txt.gz'
+feature = int(sys.argv[3]) # 0 area,1 perimeter,2 circularity,3 eccentricity,4 intensity,5 degree,6 cc
+steps = int(sys.argv[4]) # 0: 5, 1: 50, 2:500
+modality = sys.argv[5] #absolute or deciles division of the feature range
+scale = sys.argv[6] #linear of logarithmic scale of the attribute values
 
 history = np.load(npyfilename,allow_pickle=True)
+
 if scale == 'linear':
-    attribute = np.mean(history[:,:,:steps],axis=2)[:,feature]
+    attribute = history[:,feature,steps]
     print(attribute.shape)
 elif scale == 'logarithmic':
-    attribute = np.log2(np.mean(history[:,:,:steps],axis=2))[:,feature]
+    attribute = np.log2(history[:,feature,steps])
     attribute = attribute[np.isfinite(attribute)]
-    
-##########################################                       
-# # Fit a normal distribution to the data:
-# mu, std = norm.fit(attribute) # you could also fit to a lognorma the original data
-# sns.set(style='white', rc={'figure.figsize':(5,5)})
-# plt.hist(attribute, bins=100, density=True, alpha=0.6, color='g')
-# #Plot the PDF.
-# xmin, xmax = plt.xlim()
-# x = np.linspace(xmin, xmax, 100)
-# p = norm.pdf(x, mu, std)
-# plt.plot(x, p, 'k', linewidth=2)
-# title = "Fit results: mu = %.2f,  std = %.2f" % (mu, std)
-# plt.title(title)
-# plt.savefig(outdir+'/'+str(ID)+"_distro-"+str(scale)+"_scale.png") # save as png
-# plt.close()
-###########################################
 
 # create empty list for node colors
 G = nx.Graph()
 pos = np.loadtxt(txtfilename, delimiter="\t",skiprows=True,usecols=(5,6))
-
-if flip == 'flip':
-    pos[:,1] = [ -pos[ind,1] for ind in range(pos.shape[0]) ]
-
 G.add_nodes_from(range(len(attribute)))
 
 # color attribute based on percentiles, deciles or quartiles ...
-if modality == 'linear':
+if modality == 'absolute':
     node_color = np.interp(attribute, (attribute.min(), attribute.max()), (0, +10))
 elif modality == 'deciles':
     node_color = pd.qcut(attribute, 10, labels=False)
@@ -73,6 +51,23 @@ plt.gca().xaxis.set_major_locator(plt.NullLocator())
 plt.gca().yaxis.set_major_locator(plt.NullLocator())
 
 plt.axis('off')
-plt.savefig(outdir+'/'+str(ID)+"_heatmap-"+str(feature)+"-"+str(scale)+"_scale""-"+str(modality)+"_partition-radius"+str(steps)+".png", dpi=200,bbox_inches = 'tight', pad_inches = 0.5) # save as png
+plt.savefig(txtfilename+".heatmap-"+str(feature)+".scale-"+str(scale)+".partition-"+str(modality)+".radius-"+str(steps)+".png", dpi=100,bbox_inches = 'tight', pad_inches = 0.5) # save as png
 plt.close()
+
+#########################################
+##########################################                       
+# # Fit a normal distribution to the data:
+# mu, std = norm.fit(attribute) # you could also fit to a lognorma the original data
+# sns.set(style='white', rc={'figure.figsize':(5,5)})
+# plt.hist(attribute, bins=100, density=True, alpha=0.6, color='g')
+# #Plot the PDF.
+# xmin, xmax = plt.xlim()
+# x = np.linspace(xmin, xmax, 100)
+# p = norm.pdf(x, mu, std)
+# plt.plot(x, p, 'k', linewidth=2)
+# title = "Fit results: mu = %.2f,  std = %.2f" % (mu, std)
+# plt.title(title)
+# plt.savefig(outdir+'/'+str(ID)+"_distro-"+str(scale)+"_scale.png") # save as png
+# plt.close()
+###########################################
 
