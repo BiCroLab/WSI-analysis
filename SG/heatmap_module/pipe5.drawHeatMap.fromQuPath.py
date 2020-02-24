@@ -38,7 +38,7 @@ G.add_nodes_from(range(len(attribute)))
 if modality == 'absolute':
     node_color = np.interp(attribute, (attribute.min(), attribute.max()), (0, +10))
 elif modality == 'deciles':
-    node_color = pd.qcut(attribute, 10, labels=False)
+    node_color = pd.qcut(attribute, 4, labels=False)
 
 # draw graph with node attribute color
 sns.set(style='white', rc={'figure.figsize':(50,50)})

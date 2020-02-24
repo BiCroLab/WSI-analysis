@@ -26,6 +26,7 @@ def main():
     )
 
     A = mat_XY
+
     degree = A.sum(axis=1) #calculate degree vector
 
     AA = A.dot(A)
@@ -33,7 +34,6 @@ def main():
     d1 = AA.mean(axis=0) 
     m = A.mean(axis=0)
     d2 = np.power(m,2)
-
     num = AAA.diagonal().reshape((1,A.shape[0]))
     denom = np.asarray(d1-d2)
     cc = np.divide(num,denom*A.shape[0]) #clustering coefficient
