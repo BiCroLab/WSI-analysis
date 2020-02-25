@@ -27,6 +27,7 @@ print('Saving data table')
 np.save(str(morphology)+'.localdata',data)
 
 S = normalize(W, norm='l1', axis=1) #create the row-stochastic matrix
+
 smooth = np.zeros((data.shape[0],data.shape[1],3))
 summa = data
 for counter in range(steps):

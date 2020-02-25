@@ -13,7 +13,7 @@ from scipy.stats import norm, zscore, poisson
 from sklearn.preprocessing import normalize
 warnings.filterwarnings('ignore')
 
-npyfilename = sys.argv[1] # 'walkhistory.npy'
+npyfilename = sys.argv[1] # 'walkhistory.npy' or 'smooth.py'
 txtfilename = sys.argv[2] #'txt.gz'
 feature = int(sys.argv[3]) # 0 area,1 perimeter,2 circularity,3 eccentricity,4 intensity,5 degree,6 cc
 steps = int(sys.argv[4]) # 0: 5, 1: 50, 2:500
@@ -38,7 +38,7 @@ G.add_nodes_from(range(len(attribute)))
 if modality == 'absolute':
     node_color = np.interp(attribute, (attribute.min(), attribute.max()), (0, +10))
 elif modality == 'deciles':
-    node_color = pd.qcut(attribute, 4, labels=False)
+    node_color = pd.qcut(attribute, 10, labels=False)
 
 # draw graph with node attribute color
 sns.set(style='white', rc={'figure.figsize':(50,50)})
