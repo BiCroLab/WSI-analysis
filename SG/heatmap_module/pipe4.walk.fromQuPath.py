@@ -26,23 +26,23 @@ data = np.hstack((morpho,degree_vec,cc_vec))
 print('Saving data table')
 np.save(str(morphology)+'.localdata',data)
 
-# S = normalize(W, norm='l1', axis=1) #create the row-stochastic matrix
-# smooth = np.zeros((data.shape[0],data.shape[1],3))
-# summa = data
-# for counter in range(steps):
-#     newdata = S.dot(data)
-#     summa += newdata
-#     data = newdata
-#     if counter == round((steps-1)/100):
-#         smooth[:,:,0] = summa*1.0/(counter+1)
-#     if counter == round((steps-1)/10):
-#         smooth[:,:,1] = summa*1.0/(counter+1)
-#     if counter == steps-1:
-#         smooth[:,:,2] = summa*1.0/(counter+1)
+S = normalize(W, norm='l1', axis=1) #create the row-stochastic matrix
+smooth = np.zeros((data.shape[0],data.shape[1],3))
+summa = data
+for counter in range(steps):
+    newdata = S.dot(data)
+    summa += newdata
+    data = newdata
+    if counter == round((steps)/100)-1:
+        smooth[:,:,0] = summa*1.0/(counter+1)
+    if counter == round((steps)/10)-1:
+        smooth[:,:,1] = summa*1.0/(counter+1)
+    if counter == steps-1:
+        smooth[:,:,2] = summa*1.0/(counter+1)
 
-# print("Saving history...")
-# filename = str(morphology)+'.walkhistory'    
-# np.save(filename,smooth)
+print("Saving history...")
+filename = str(morphology)+'.walkhistory'    
+np.save(filename,smooth)
 
 #################################
 #################################
