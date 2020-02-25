@@ -24,25 +24,29 @@ morpho = np.loadtxt(morphology, delimiter="\t", skiprows=True, usecols=(7,8,9,12
 degree_vec = np.loadtxt(degreefile, delimiter=" ").reshape((W.shape[0],1))
 cc_vec = np.loadtxt(ccfile, delimiter=" ").reshape((W.shape[0],1))
 data = np.hstack((morpho,degree_vec,cc_vec))
-S = normalize(W, norm='l1', axis=1) #create the row-stochastic matrix
+print('Saving data table')
+np.save(str(morphology)+'.localdata',data)
 
-smooth = np.zeros((data.shape[0],data.shape[1],3))
-summa = data
-for counter in range(steps):
-    newdata = S.dot(data)
-    summa += newdata
-    data = newdata
-    if counter == round((steps-1)/100):
-        smooth[:,:,0] = summa*1.0/(counter+1)
-    if counter == round((steps-1)/10):
-        smooth[:,:,1] = summa*1.0/(counter+1)
-    if counter == steps-1:
-        smooth[:,:,2] = summa*1.0/(counter+1)
+# S = normalize(W, norm='l1', axis=1) #create the row-stochastic matrix
+# smooth = np.zeros((data.shape[0],data.shape[1],3))
+# summa = data
+# for counter in range(steps):
+#     newdata = S.dot(data)
+#     summa += newdata
+#     data = newdata
+#     if counter == round((steps-1)/100):
+#         smooth[:,:,0] = summa*1.0/(counter+1)
+#     if counter == round((steps-1)/10):
+#         smooth[:,:,1] = summa*1.0/(counter+1)
+#     if counter == steps-1:
+#         smooth[:,:,2] = summa*1.0/(counter+1)
 
-print("Saving history...")
-filename = str(morphology)+'.walkhistory'    
-np.save(filename,smooth)
+# print("Saving history...")
+# filename = str(morphology)+'.walkhistory'    
+# np.save(filename,smooth)
 
+#################################
+#################################
 #################################
 # feature = sys.argv[6] #one of area,perimeter,circularity,eccentricity,intensity,degree,cc
 
