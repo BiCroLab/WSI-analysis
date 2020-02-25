@@ -23,8 +23,7 @@ steps = int(sys.argv[6]) #number of steps of the random walker
 morpho = np.loadtxt(morphology, delimiter="\t", skiprows=True, usecols=(7,8,9,12,13)).reshape((W.shape[0],5))
 degree_vec = np.loadtxt(degreefile, delimiter=" ").reshape((W.shape[0],1))
 cc_vec = np.loadtxt(ccfile, delimiter=" ").reshape((W.shape[0],1))
-modularity_vec = np.loadtxt(modularityfile, delimiter=" ").reshape((W.shape[0],1))
-data = np.hstack((morpho,degree_vec,cc_vec,modularity_vec))
+data = np.hstack((morpho,degree_vec,cc_vec))
 S = normalize(W, norm='l1', axis=1) #create the row-stochastic matrix
 
 smooth = np.zeros((data.shape[0],data.shape[1],3))
@@ -74,3 +73,5 @@ np.save(filename,smooth)
 #     history[:,:,counter+1] = W.dot(history[:,:,counter])
 
 #Save only 3 point averages otherwise you need 75G per patient
+
+# modularity_vec = np.loadtxt(modularityfile, delimiter=" ").reshape((W.shape[0],1))
