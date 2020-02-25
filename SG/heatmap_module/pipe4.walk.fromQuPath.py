@@ -17,8 +17,7 @@ morphology = sys.argv[1] #id...txt.gz
 W = sparse.load_npz(sys.argv[2]) #id...graph.npz
 degreefile = sys.argv[3] #id...degree.gz
 ccfile = sys.argv[4]  #id...cc.gz
-modularityfile = sys.argv[5]  #id...cc.gz
-steps = int(sys.argv[6]) #number of steps of the random walker
+steps = int(sys.argv[5]) #number of steps of the random walker
 
 morpho = np.loadtxt(morphology, delimiter="\t", skiprows=True, usecols=(7,8,9,12,13)).reshape((W.shape[0],5))
 degree_vec = np.loadtxt(degreefile, delimiter=" ").reshape((W.shape[0],1))

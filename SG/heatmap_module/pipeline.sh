@@ -22,10 +22,9 @@ if [ -f ${id} ]; then
     	$path2anaconda/python3.7 pipe3.makeGraph.fromQuPath.py ${id}
     fi
     echo Make average windows
-    $path2anaconda/python3.7 pipe4.walk.fromQuPath.py ${id} ${id}{.nn10.adj.npz,.nn10.degree.gz,.nn10.cc.gz,.nn10.modularity.gz} 500
+    $path2anaconda/python3.7 pipe4.walk.fromQuPath.py ${id} ${id}{.nn10.adj.npz,.nn10.degree.gz,.nn10.cc.gz} 500
     # echo Make heatmaps
-    # parallel "$path2anaconda/python3.7 pipe5.drawHeatMap.fromQuPath.py ${id}*.npy ${id} {1} {2} deciles linear" ::: 0 1 2 3 4 5 6 7 ::: 0 1
-    2
+    # parallel "$path2anaconda/python3.7 pipe5.drawHeatMap.fromQuPath.py ${id}*.npy ${id} {1} {2} deciles linear" ::: 0 1 2 3 4 5 6 7 ::: 0 1 2
 else
     echo $path2data/${id}__*.txt.gz does not exist!
 fi
