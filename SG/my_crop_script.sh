@@ -30,4 +30,8 @@ for x0 in $xlist; do
     mv crop_$file crop_$xstart-0-$lwidth-${height}_$file 
 done
 ######################
-# use bioimage convert with -resolution option to change pixel resolution of cropped images, which are different from original 
+# Correct resolution in the output cropped images:
+# exiftool -s 10__iMS340_20190710_001.tif | grep Resolution #get the correct values
+# exiftool -exif:YResolution=1.543062242 crop_0-0-10000-30516_10__iMS340_20190710_001.tif
+# exiftool -exif:XResolution=1.543062242 crop_0-0-10000-30516_10__iMS340_20190710_001.tif
+# exiftool -exif:resolutionunit=None crop_0-0-10000-30516_10__iMS340_20190710_001.tif 
