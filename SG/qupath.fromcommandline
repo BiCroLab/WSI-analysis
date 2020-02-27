@@ -1,0 +1,5 @@
+
+cd /home/garner1/tools/QuPath-0.2.0-m9-Linux/QuPath-0.2.0-m9/lib/app
+
+java -Djava.library.path='./' -jar qupath-0.2.0-m9.jar -image /media/garner1/hdd2/ND2/smallsize/14B__iMS386_20190828_001.nd2 -script
+../../bin/nd2-segmentation.groovy > output
