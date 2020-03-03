@@ -51,8 +51,7 @@ def main():
     sparse.save_npz(sys.argv[1]+'.nn'+str(nn)+'.adj.npz',mat_XY)
     np.savetxt(sys.argv[1]+'.nn'+str(nn)+'.cc.gz', cc)
     # np.savetxt(sys.argv[1]+'.nn'+str(nn)+'.modularity.gz', modularity)
-  
-    
+      
 if __name__=="__main__":
     main()
 
