@@ -23,15 +23,15 @@ dirname = os.path.dirname(filename)
 
 A, pos, nn = space2graph(filename)
 G = nx.from_scipy_sparse_matrix(A, edge_attribute='weight')
-# d = getdegree(G)
-# cc = clusteringCoeff(A)
+d = getdegree(G)
+cc = clusteringCoeff(A)
 
-# outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.adj.npz'
-# sparse.save_npz(outfile, A)
-# outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.degree.gz'
-# np.savetxt(outfile, d)
-# outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.cc.gz'
-# np.savetxt(outfile, cc)
+outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.adj.npz'
+sparse.save_npz(outfile, A)
+outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.degree.gz'
+np.savetxt(outfile, d)
+outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.cc.gz'
+np.savetxt(outfile, cc)
 
 ####################################################################################################
 # Select the morphological features,
@@ -57,12 +57,6 @@ pk.dump(pca, open(outfile,"wb"))
 # print(pca.singular_values_)
 # print(pca.components_)
 
-# outfile = os.path.join(dirname, basename)+'.principalComp'
-# np.save(outfile, pca.components_)
-# outfile = os.path.join(dirname, basename)+'.singulavalues'
-# np.save(outfile,pca.singular_values_)
-
-# print(pca.components_.shape, pca.singular_values_.shape) # components X features
 ####################################################################################################
 # Project principal components back to real space
 ###################################################################################################
