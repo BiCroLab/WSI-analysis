@@ -23,31 +23,36 @@ dirname = os.path.dirname(filename)
 
 A, pos, nn = space2graph(filename)
 G = nx.from_scipy_sparse_matrix(A, edge_attribute='weight')
-# d = getdegree(G)
-# cc = clusteringCoeff(A)
+d = getdegree(G)
+cc = clusteringCoeff(A)
 
-# outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.adj.npz'
-# sparse.save_npz(outfile, A)
-# outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.degree.gz'
-# np.savetxt(outfile, d)
-# outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.cc.gz'
-# np.savetxt(outfile, cc)
+outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.adj.npz'
+sparse.save_npz(outfile, A)
+outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.degree.gz'
+np.savetxt(outfile, d)
+outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.cc.gz'
+np.savetxt(outfile, cc)
 
 ####################################################################################################
 # Select the morphological features,
 # normalize the feature matrix
-# and perform PCA analysis
 ###################################################################################################
 
 # Features list =  Nucleus:_Area   Nucleus:_Perimeter      Nucleus:_Circularity    Nucleus:_Eccentricity   Nucleus:_Hematoxylin_OD_mean    Nucleus:_Hematoxylin_OD_sum
 morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(7,8,9,12,13,14)).reshape((A.shape[0],6))
-morphology_scaled = rescale(morphology)
+
+####################################################################################################
+# Perform PCA analysis
+###################################################################################################
+
+radius = 500
+morphology_smooth = smoothing(A, morphology, radius)
 
 ####################################################################################################
 # Perform PCA analysis
 ###################################################################################################
 import pickle as pk
-
+morphology_scaled = rescale(morphology_smooth)
 pca = principalComp(morphology_scaled)
 outfile = os.path.join(dirname, basename)+".pca.pkl"
 pk.dump(pca, open(outfile,"wb"))
@@ -57,30 +62,13 @@ pk.dump(pca, open(outfile,"wb"))
 # print(pca.singular_values_)
 # print(pca.components_)
 
-# outfile = os.path.join(dirname, basename)+'.principalComp'
-# np.save(outfile, pca.components_)
-# outfile = os.path.join(dirname, basename)+'.singulavalues'
-# np.save(outfile,pca.singular_values_)
-
-# print(pca.components_.shape, pca.singular_values_.shape) # components X features
 ####################################################################################################
 # Project principal components back to real space
 ###################################################################################################
-projection = np.dot(morphology_scaled,pca.components_.transpose())
-booleanProj = (projection > 0)
+import pandas as pd
 
-uniqueValues, occurCount = np.unique(booleanProj, axis=0, return_counts=True)
-
-listOfUniqueValues = zip(uniqueValues, range(uniqueValues.shape[0]))
-print('Unique Values along with their cluster id')
-positions = [] # a list of list of indexes
-node_color = np.zeros((booleanProj.shape[0],1))
-for elem in listOfUniqueValues:
-   newlist = np.where(np.all(booleanProj==elem[0],axis=1))[0].tolist() #row index where a cluster occur
-   node_color[newlist] = elem[1]
-   positions.append(newlist)
-
-node_color = node_color.flatten() # to be used in colormap 
+projection = np.dot(morphology_scaled,pca.components_.transpose()[:,0]) #project only the first PC
+node_color = pd.qcut(projection, 10, labels=False)
 
 ####################################################################################################
 # Draw graph with node attribute color
@@ -98,3 +86,19 @@ plt.axis('off')
 outfile = os.path.join(dirname, basename)+'.heatmap'
 plt.savefig(outfile+".png", dpi=100,bbox_inches = 'tight', pad_inches = 0.5) # save as png
 plt.close()
+
+###################################################################################################
+###################################################################################################
+
+# projection = np.dot(morphology_scaled,pca.components_.transpose()) #project only the first PC
+# booleanProj = (projection > 0)
+# uniqueValues, occurCount = np.unique(booleanProj, axis=0, return_counts=True)
+# listOfUniqueValues = zip(uniqueValues, range(uniqueValues.shape[0]))
+# print('Unique Values along with their cluster id')
+# positions = [] # a list of list of indexes
+# node_color = np.zeros((booleanProj.shape[0],1))
+# for elem in listOfUniqueValues:
+#    newlist = np.where(np.all(booleanProj==elem[0],axis=1))[0].tolist() #row index where a cluster occur
+#    node_color[newlist] = elem[1]
+#    positions.append(newlist)
+# node_color = node_color.flatten() # to be used in colormap 

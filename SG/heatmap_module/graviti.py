@@ -10,6 +10,7 @@ import networkx as nx
 from sklearn import preprocessing
 from sklearn.decomposition import PCA
 warnings.filterwarnings('ignore')
+from sklearn.preprocessing import normalize
 
 def space2graph(filename):
     XY = np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(5,6))
@@ -55,6 +56,18 @@ def principalComp(data):
     pca.fit(data)
     return pca
 
+def smoothing(W,data,radius):
+    S = normalize(W, norm='l1', axis=1) #create the row-stochastic matrix
+
+    smooth = np.zeros((data.shape[0],data.shape[1]))
+    summa = data
+    for counter in range(radius):
+        newdata = S.dot(data)
+        summa += newdata
+        data = newdata
+        if counter == radius-1:
+            smooth = summa*1.0/(counter+1)
+    return smooth
 
 
 
