@@ -12,9 +12,8 @@ from sklearn.decomposition import PCA
 warnings.filterwarnings('ignore')
 from sklearn.preprocessing import normalize
 
-def space2graph(filename):
+def space2graph(filename,nn):
     XY = np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(5,6))
-    nn = 10 # keep nn small or it will provide counterintuitive results for the clustering coefficient
     mat_XY = umap.umap_.fuzzy_simplicial_set(
         XY,
         n_neighbors=nn, 
@@ -28,7 +27,7 @@ def space2graph(filename):
         local_connectivity=2.0,
         verbose=False
     )
-    return mat_XY, XY, nn
+    return mat_XY, XY
 
 def getdegree(graph):
     d = np.asarray(graph.degree(weight='weight'))[:,1] # as a (N,) array

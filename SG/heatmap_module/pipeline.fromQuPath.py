@@ -9,6 +9,9 @@ import seaborn as sns; sns.set()
 import matplotlib.pyplot as plt
 
 filename = sys.argv[1] # name of the morphology mesearements from qupath
+radius = int(sys.argv[2])   # for smoothing
+quantiles = int(sys.argv[3]) # for stratifing the projection
+
 if os.path.splitext(os.path.basename(filename))[1] == '.gz':
     basename = os.path.splitext(os.path.splitext(os.path.basename(filename))[0])[0]
 elif os.path.splitext(os.path.basename(filename))[1] == '.txt':
@@ -20,18 +23,35 @@ dirname = os.path.dirname(filename)
 # and save the adjacency matrix 
 # and the degree and clustering coefficient vectors
 ###################################################################################################
-
-A, pos, nn = space2graph(filename)
-G = nx.from_scipy_sparse_matrix(A, edge_attribute='weight')
-d = getdegree(G)
-cc = clusteringCoeff(A)
-
-outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.adj.npz'
-sparse.save_npz(outfile, A)
-outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.degree.gz'
-np.savetxt(outfile, d)
-outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.cc.gz'
-np.savetxt(outfile, cc)
+print('Prepare the topological graph ...')
+nn = 10 # this is hardcoded at the moment
+path = os.path.join(dirname, basename)+'.nn'+str(nn)+'.adj.npz'
+if not os.path.exists(path):
+    print('The graph does not exists yet')
+    A, pos = space2graph(filename,nn)
+    sparse.save_npz(path, A)
+    G = nx.from_scipy_sparse_matrix(A, edge_attribute='weight')
+    d = getdegree(G)
+    cc = clusteringCoeff(A)
+    outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.degree.gz'
+    np.savetxt(outfile, d)
+    outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.cc.gz'
+    np.savetxt(outfile, cc)
+    nx.write_gpickle(G, os.path.join(dirname, basename) + ".graph.pickle")
+if os.path.exists(path):
+    print('The graph exists already')
+    A = sparse.load_npz(path) #id...graph.npz
+    pos = np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(5,6))
+    if os.path.exists( os.path.join(dirname, basename) + ".graph.pickle" ):
+        print('A networkx obj G exists already')
+        G = nx.read_gpickle(os.path.join(dirname, basename) + ".graph.pickle")
+    else:
+        print('A networkx obj G is being created')
+        G = nx.from_scipy_sparse_matrix(A, edge_attribute='weight')
+        nx.write_gpickle(G, os.path.join(dirname, basename) + ".graph.pickle")
+    d = getdegree(G)
+    cc = clusteringCoeff(A)
+print('Topological graph ready!')
 
 ####################################################################################################
 # Select the morphological features,
@@ -42,21 +62,28 @@ np.savetxt(outfile, cc)
 morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(7,8,9,12,13,14)).reshape((A.shape[0],6))
 
 ####################################################################################################
-# Perform PCA analysis
+# Smooth the morphology
 ###################################################################################################
+print('Smooth the morphology')
 
-radius = 500
-morphology_smooth = smoothing(A, morphology, radius)
+outfile = os.path.join(dirname, basename)+'.r'+str(radius)+'.smooth'
+if os.path.exists(outfile+'.npy'):
+    morphology_smooth = np.load(outfile+'.npy')
+else:
+    morphology_smooth = smoothing(A, morphology, radius)
+    np.save(outfile, morphology_smooth)
 
+print('Done!')
 ####################################################################################################
 # Perform PCA analysis
 ###################################################################################################
+print('Run PCA')
 import pickle as pk
-morphology_scaled = rescale(morphology_smooth)
+morphology_scaled = rescale(morphology_smooth) # into [-1,+1] per feature
 pca = principalComp(morphology_scaled)
 outfile = os.path.join(dirname, basename)+".pca.pkl"
 pk.dump(pca, open(outfile,"wb"))
-
+print('Done!')
 # print(pca.explained_variance_ratio_)
 # print(pca.n_components_,pca.n_features_,pca.n_samples_)
 # print(pca.singular_values_)
@@ -65,28 +92,69 @@ pk.dump(pca, open(outfile,"wb"))
 ####################################################################################################
 # Project principal components back to real space
 ###################################################################################################
+print('Project back to real space')
 import pandas as pd
 
 projection = np.dot(morphology_scaled,pca.components_.transpose()[:,0]) #project only the first PC
-node_color = pd.qcut(projection, 10, labels=False)
+node_color = pd.qcut(projection, quantiles, labels=False)
+print('Done!')
 
+####################################################################################################
+# Partition the graph
+###################################################################################################
+features = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(5,6,7,8,9,12,13,14)).reshape((A.shape[0],8)) #including X,Y
+L = nx.laplacian_matrix(G) 
+delta_features = L.dot(features)
+data = np.hstack((features,delta_features)) #it has 16 features
+
+threshold = 100 # on the number of nodes per connected component
+covdata = [] # will contain a list for each quantile
+for q in range(quantiles):
+    covq = [] # will contain a covmat for each connected subgraph
+    nodes = [n for n in np.where(node_color == q)[0]]
+    subG = G.subgraph(nodes)
+    graphs = [g for g in list(nx.connected_component_subgraphs(subG)) if g.number_of_nodes()>=threshold] # threshold graphs based on their size
+    print('The number of connected components is',str(nx.number_connected_components(subG)), ' with ',str(len(graphs)),' large enough')
+    for g in graphs:
+        nodeset = list(g.nodes)
+        dataset = data[nodeset]
+        covmat = np.cov(dataset,rowvar=False)
+        covq.append(covmat)
+    covdata.append(covq)
+for q in covdata:
+    print(len(q))
+    # for m in q:
+    #     print(m.shape)
+
+    # print('Saving graph')
+    # sns.set(style='white', rc={'figure.figsize':(50,50)})
+    # nx.draw_networkx_nodes(subG, pos, alpha=0.5,node_color='r', node_size=1)
+    
+    # plt.margins(0,0)
+    # plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    # plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    
+    # plt.axis('off')
+    # outfile = os.path.join(dirname, basename)+'.heatmap'
+    # plt.savefig("subgraph.q"+str(q)+".png", dpi=100,bbox_inches = 'tight', pad_inches = 0.5) # save as png
+    # plt.close()
+    # print('Done!')
 ####################################################################################################
 # Draw graph with node attribute color
 ###################################################################################################
-sns.set(style='white', rc={'figure.figsize':(50,50)})
-nx.draw_networkx_nodes(G, pos, alpha=0.5,node_color=node_color, node_size=1,cmap='viridis')
+# print('Saving graph')
+# sns.set(style='white', rc={'figure.figsize':(50,50)})
+# nx.draw_networkx_nodes(G, pos, alpha=0.5,node_color=node_color, node_size=1,cmap='viridis')
 
-print('saving graph')
+# plt.margins(0,0)
+# plt.gca().xaxis.set_major_locator(plt.NullLocator())
+# plt.gca().yaxis.set_major_locator(plt.NullLocator())
 
-plt.margins(0,0)
-plt.gca().xaxis.set_major_locator(plt.NullLocator())
-plt.gca().yaxis.set_major_locator(plt.NullLocator())
-
-plt.axis('off')
-outfile = os.path.join(dirname, basename)+'.heatmap'
-plt.savefig(outfile+".png", dpi=100,bbox_inches = 'tight', pad_inches = 0.5) # save as png
-plt.close()
-
+# plt.axis('off')
+# outfile = os.path.join(dirname, basename)+'.heatmap'
+# plt.savefig(outfile+".q"+str(quantiles)+".r"+str(radius)+".png", dpi=100,bbox_inches = 'tight', pad_inches = 0.5) # save as png
+# plt.close()
+# print('Done!')
 ###################################################################################################
 ###################################################################################################
 
