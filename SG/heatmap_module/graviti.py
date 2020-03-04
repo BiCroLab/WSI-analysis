@@ -68,5 +68,23 @@ def smoothing(W,data,radius):
             smooth = summa*1.0/(counter+1)
     return smooth
 
+def covd(features,G,threshold,quantiles,node_color):
+    L = nx.laplacian_matrix(G) 
+    delta_features = L.dot(features)
+    data = np.hstack((features,delta_features)) #it has 16 features
 
+    covdata = [] # will contain a list for each quantile
+    for q in range(quantiles):
+        covq = [] # will contain a covmat for each connected subgraph
+        nodes = [n for n in np.where(node_color == q)[0]]
+        subG = G.subgraph(nodes)
+        graphs = [g for g in list(nx.connected_component_subgraphs(subG)) if g.number_of_nodes()>=threshold] # threshold graphs based on their size
+        print('The number of connected components is',str(nx.number_connected_components(subG)), ' with ',str(len(graphs)),' large enough')
+        for g in graphs:
+            nodeset = list(g.nodes)
+            dataset = data[nodeset]
+            covmat = np.cov(dataset,rowvar=False)
+            covq.append(covmat)
+        covdata.append(covq)
+    return covdata
 

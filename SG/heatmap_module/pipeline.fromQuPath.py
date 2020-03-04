@@ -102,29 +102,19 @@ print('Done!')
 ####################################################################################################
 # Partition the graph
 ###################################################################################################
-features = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(5,6,7,8,9,12,13,14)).reshape((A.shape[0],8)) #including X,Y
-L = nx.laplacian_matrix(G) 
-delta_features = L.dot(features)
-data = np.hstack((features,delta_features)) #it has 16 features
+print('Generate the covariance descriptor')
+outfile = os.path.join(dirname, basename)+'.covd.npy'
+threshold = 100
+if os.path.exists(outfile):
+    covdata = np.load(outfile,allow_pickle=True)
+else:
+    features = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(5,6,7,8,9,12,13,14)).reshape((A.shape[0],8)) #including X,Y
+    covdata = covd(features,G,threshold,quantiles,node_color)
+    np.save(outfile,covdata)
 
-threshold = 100 # on the number of nodes per connected component
-covdata = [] # will contain a list for each quantile
-for q in range(quantiles):
-    covq = [] # will contain a covmat for each connected subgraph
-    nodes = [n for n in np.where(node_color == q)[0]]
-    subG = G.subgraph(nodes)
-    graphs = [g for g in list(nx.connected_component_subgraphs(subG)) if g.number_of_nodes()>=threshold] # threshold graphs based on their size
-    print('The number of connected components is',str(nx.number_connected_components(subG)), ' with ',str(len(graphs)),' large enough')
-    for g in graphs:
-        nodeset = list(g.nodes)
-        dataset = data[nodeset]
-        covmat = np.cov(dataset,rowvar=False)
-        covq.append(covmat)
-    covdata.append(covq)
-for q in covdata:
-    print(len(q))
-    # for m in q:
-    #     print(m.shape)
+print('Done!')
+
+
 
     # print('Saving graph')
     # sns.set(style='white', rc={'figure.figsize':(50,50)})
