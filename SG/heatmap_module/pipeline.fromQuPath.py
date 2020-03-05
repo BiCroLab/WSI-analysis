@@ -3,7 +3,7 @@ import networkx as nx
 import numpy as np
 from graviti import *
 import sys 
-from scipy import sparse
+from scipy import sparse, linalg
 import os
 import seaborn as sns; sns.set()
 import matplotlib.pyplot as plt
@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 filename = sys.argv[1] # name of the morphology mesearements from qupath
 radius = int(sys.argv[2])   # for smoothing
 quantiles = int(sys.argv[3]) # for stratifing the projection
+threshold = int(sys.argv[4]) # min number of nodes in a subgraph
 
 if os.path.splitext(os.path.basename(filename))[1] == '.gz':
     basename = os.path.splitext(os.path.splitext(os.path.basename(filename))[0])[0]
@@ -100,21 +101,51 @@ node_color = pd.qcut(projection, quantiles, labels=False)
 print('Done!')
 
 ####################################################################################################
-# Partition the graph
+# Partition the graph and generate the covariance descriptors
 ###################################################################################################
 print('Generate the covariance descriptor')
-outfile = os.path.join(dirname, basename)+'.covd.npy'
-threshold = 100
-if os.path.exists(outfile):
-    covdata = np.load(outfile,allow_pickle=True)
+outfile_covd = os.path.join(dirname, basename)+'.covd.npy'
+outfile_graph2covd = os.path.join(dirname, basename)+'.graph2covd.npy'
+if os.path.exists(outfile_covd) and os.path.exists(outfile_graph2covd):
+    covdata = np.load(outfile_covd,allow_pickle=True)
+    graph2covd = np.load(outfile_graph2covd,allow_pickle=True)
 else:
     features = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(5,6,7,8,9,12,13,14)).reshape((A.shape[0],8)) #including X,Y
-    covdata = covd(features,G,threshold,quantiles,node_color)
-    np.save(outfile,covdata)
-
+    covdata, graph2covd = covd(features,G,threshold,quantiles,node_color)
+    np.save(outfile_covd,covdata)
+    np.save(outfile_graph2covd,graph2covd)
 print('Done!')
 
+flat_covdata = [item for sublist in covdata for item in sublist]
+logvec = [linalg.logm(m).reshape((1,16*16))  for m in flat_covdata]
+X = np.vstack(logvec)
 
+print('Cluster the descriptors')
+import umap
+import hdbscan
+import sklearn.cluster as cluster
+from sklearn.metrics import adjusted_rand_score, adjusted_mutual_info_score
+standard_embedding = umap.UMAP(random_state=42).fit_transform(X)
+clusterable_embedding = umap.UMAP(n_neighbors=10,min_dist=0.0,n_components=2,random_state=42).fit_transform(X)
+
+labels = hdbscan.HDBSCAN(min_samples=10,min_cluster_size=50).fit_predict(clusterable_embedding)
+
+clustered = (labels >= 0)
+plt.scatter(standard_embedding[~clustered, 0],
+            standard_embedding[~clustered, 1],
+            c='k',#(0.5, 0.5, 0.5),
+            s=0.1,
+            alpha=1.0)
+plt.scatter(standard_embedding[clustered, 0],
+            standard_embedding[clustered, 1],
+            c=labels[clustered],
+            s=0.1,
+            cmap='Spectral');
+
+outfile = os.path.join(dirname, basename)+'.test.png'
+plt.savefig(outfile) # save as png
+plt.close()
+print('Done')
 
     # print('Saving graph')
     # sns.set(style='white', rc={'figure.figsize':(50,50)})

@@ -5,12 +5,13 @@ import numpy as np
 import sys
 import umap
 import warnings
-from scipy import sparse
+from scipy import sparse, linalg
 import networkx as nx
 from sklearn import preprocessing
 from sklearn.decomposition import PCA
 warnings.filterwarnings('ignore')
 from sklearn.preprocessing import normalize
+import numba
 
 def space2graph(filename,nn):
     XY = np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(5,6))
@@ -74,17 +75,35 @@ def covd(features,G,threshold,quantiles,node_color):
     data = np.hstack((features,delta_features)) #it has 16 features
 
     covdata = [] # will contain a list for each quantile
+    graph2covd = []
     for q in range(quantiles):
         covq = [] # will contain a covmat for each connected subgraph
         nodes = [n for n in np.where(node_color == q)[0]]
         subG = G.subgraph(nodes)
         graphs = [g for g in list(nx.connected_component_subgraphs(subG)) if g.number_of_nodes()>=threshold] # threshold graphs based on their size
         print('The number of connected components is',str(nx.number_connected_components(subG)), ' with ',str(len(graphs)),' large enough')
+        g_id = 0
         for g in graphs:
             nodeset = list(g.nodes)
             dataset = data[nodeset]
             covmat = np.cov(dataset,rowvar=False)
             covq.append(covmat)
-        covdata.append(covq)
-    return covdata
 
+            quant_graph = list([(q,g_id)])
+            tuple_nodes = [tuple(g.nodes)]
+            new_graph2covd = list(zip(quant_graph,tuple_nodes))
+            graph2covd.append(new_graph2covd)
+            g_id += 1
+            
+        covdata.append(covq)
+    return covdata, graph2covd
+
+def logdet_div(X,Y): #logdet divergence
+    (sign_1, logdet_1) = np.linalg.slogdet(0.5*(X+Y)) 
+    (sign_2, logdet_2) = np.linalg.slogdet(np.dot(X,Y))
+    return np.sqrt( sign_1*logdet_1-0.5*sign_2*logdet_2 )
+
+def airm(X,Y): #affine invariant riemannian metric
+    A = np.linalg.inv(linalg.sqrtm(X))
+    B = np.dot(A,np.dot(Y,A))
+    return np.linalg.norm(linalg.logm(B))
