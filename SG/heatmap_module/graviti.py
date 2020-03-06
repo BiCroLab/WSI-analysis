@@ -87,7 +87,7 @@ def smoothing(W,data,radius):
     return smooth
 
 def covd(features,G,threshold,quantiles,node_color):
-    L = nx.laplacian_matrix(G) 
+    L = nx.laplacian_matrix(G)
     delta_features = L.dot(features)
     data = np.hstack((features,delta_features)) #it has 16 features
 

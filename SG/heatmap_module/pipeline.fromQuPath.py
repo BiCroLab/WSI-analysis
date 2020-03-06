@@ -13,6 +13,8 @@ radius = int(sys.argv[2])   # for smoothing
 quantiles = int(sys.argv[3]) # for stratifing the projection
 threshold = int(sys.argv[4]) # min number of nodes in a subgraph
 
+basename_graph = os.path.splitext(os.path.basename(filename))[0]
+basename_smooth = os.path.splitext(os.path.splitext(os.path.basename(filename))[0])[0]+'.r'+str(radius)
 if os.path.splitext(os.path.basename(filename))[1] == '.gz':
     basename = os.path.splitext(os.path.splitext(os.path.basename(filename))[0])[0]+'.r'+str(radius)+'.q'+str(quantiles)+'.t'+str(threshold)
 elif os.path.splitext(os.path.basename(filename))[1] == '.txt':
@@ -26,7 +28,7 @@ dirname = os.path.dirname(filename)
 ###################################################################################################
 print('Prepare the topological graph ...')
 nn = 10 # this is hardcoded at the moment
-path = os.path.join(dirname, basename)+'.nn'+str(nn)+'.adj.npz'
+path = os.path.join(dirname, basename_graph)+'.nn'+str(nn)+'.adj.npz'
 if not os.path.exists(path):
     print('The graph does not exists yet')
     A, pos = space2graph(filename,nn)
@@ -34,22 +36,22 @@ if not os.path.exists(path):
     G = nx.from_scipy_sparse_matrix(A, edge_attribute='weight')
     d = getdegree(G)
     cc = clusteringCoeff(A)
-    outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.degree.gz'
+    outfile = os.path.join(dirname, basename_graph)+'.nn'+str(nn)+'.degree.gz'
     np.savetxt(outfile, d)
-    outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.cc.gz'
+    outfile = os.path.join(dirname, basename_graph)+'.nn'+str(nn)+'.cc.gz'
     np.savetxt(outfile, cc)
-    nx.write_gpickle(G, os.path.join(dirname, basename) + ".graph.pickle")
+    nx.write_gpickle(G, os.path.join(dirname, basename_graph) + ".graph.pickle")
 if os.path.exists(path):
     print('The graph exists already')
     A = sparse.load_npz(path) #id...graph.npz
     pos = np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(5,6))
-    if os.path.exists( os.path.join(dirname, basename) + ".graph.pickle" ):
+    if os.path.exists( os.path.join(dirname, basename_graph) + ".graph.pickle" ):
         print('A networkx obj G exists already')
-        G = nx.read_gpickle(os.path.join(dirname, basename) + ".graph.pickle")
+        G = nx.read_gpickle(os.path.join(dirname, basename_graph) + ".graph.pickle")
     else:
         print('A networkx obj G is being created')
         G = nx.from_scipy_sparse_matrix(A, edge_attribute='weight')
-        nx.write_gpickle(G, os.path.join(dirname, basename) + ".graph.pickle")
+        nx.write_gpickle(G, os.path.join(dirname, basename_graph) + ".graph.pickle")
     d = getdegree(G)
     cc = clusteringCoeff(A)
 print('Topological graph ready!')
@@ -67,7 +69,7 @@ morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(7,8,9,
 ###################################################################################################
 print('Smooth the morphology')
 
-outfile = os.path.join(dirname, basename)+'.r'+str(radius)+'.smooth'
+outfile = os.path.join(dirname, basename_smooth)+'.smooth'
 if os.path.exists(outfile+'.npy'):
     morphology_smooth = np.load(outfile+'.npy')
 else:

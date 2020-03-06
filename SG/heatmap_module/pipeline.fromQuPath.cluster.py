@@ -14,6 +14,8 @@ radius = int(sys.argv[3])   # for smoothing
 quantiles = int(sys.argv[4]) # for stratifing the projection
 threshold = int(sys.argv[5]) # min number of nodes in a subgraph
 
+basename_graph = os.path.splitext(os.path.basename(filename))[0]
+basename_smooth = os.path.splitext(os.path.splitext(os.path.basename(filename))[0])[0]+'.r'+str(radius)
 basename = os.path.splitext(os.path.basename(clusterfile))[0]+'.r'+str(radius)+'.q'+str(quantiles)+'.t'+str(threshold)
 dirname = os.path.dirname(filename)
 cluster = np.load(clusterfile)
@@ -24,32 +26,13 @@ cluster = np.load(clusterfile)
 ###################################################################################################
 print('Prepare the topological graph ...')
 nn = 10 # this is hardcoded at the moment
-path = os.path.join(dirname, basename)+'.nn'+str(nn)+'.adj.npz'
-if not os.path.exists(path):
-    print('The graph does not exists yet')
-    A, pos = space2graph_cluster(filename,cluster,nn)
-    sparse.save_npz(path, A)
-    G = nx.from_scipy_sparse_matrix(A, edge_attribute='weight')
-    d = getdegree(G)
-    cc = clusteringCoeff(A)
-    outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.degree.gz'
-    np.savetxt(outfile, d)
-    outfile = os.path.join(dirname, basename)+'.nn'+str(nn)+'.cc.gz'
-    np.savetxt(outfile, cc)
-    nx.write_gpickle(G, os.path.join(dirname, basename) + ".graph.pickle")
-if os.path.exists(path):
-    print('The graph exists')
-    A = sparse.load_npz(path) #id...graph.npz
-    pos = np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(5,6))
-    if os.path.exists( os.path.join(dirname, basename) + ".graph.pickle" ):
-        print('A networkx obj G exists already')
-        G = nx.read_gpickle(os.path.join(dirname, basename) + ".graph.pickle")
-    else:
-        print('A networkx obj G is being created')
-        G = nx.from_scipy_sparse_matrix(A, edge_attribute='weight')
-        nx.write_gpickle(G, os.path.join(dirname, basename) + ".graph.pickle")
-    d = getdegree(G)
-    cc = clusteringCoeff(A)
+path = os.path.join(dirname, basename_graph)+'.nn'+str(nn)+'.adj.npz'
+pos = np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(5,6))
+nodes = [i for i, x in enumerate(cluster) if x]
+G = nx.read_gpickle(os.path.join(dirname, basename_graph) + ".graph.pickle").subgraph(nodes)
+A = nx.to_scipy_sparse_matrix(G)
+# d = getdegree(G)
+# cc = clusteringCoeff(A)
 print('Topological graph ready!')
 
 ####################################################################################################
@@ -58,21 +41,18 @@ print('Topological graph ready!')
 ###################################################################################################
 
 # Features list =  Nucleus:_Area   Nucleus:_Perimeter      Nucleus:_Circularity    Nucleus:_Eccentricity   Nucleus:_Hematoxylin_OD_mean    Nucleus:_Hematoxylin_OD_sum
-morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(7,8,9,12,13,14))[cluster,:].reshape((A.shape[0],6))
+morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(7,8,9,12,13,14))[cluster,:].reshape((sum(cluster),6))
 
 ####################################################################################################
 # Smooth the morphology
 ###################################################################################################
 print('Smooth the morphology')
 
-outfile = os.path.join(dirname, basename)+'.smooth'
-if os.path.exists(outfile+'.npy'):
-    morphology_smooth = np.load(outfile+'.npy')
-else:
-    morphology_smooth = smoothing(A, morphology, radius)
-    np.save(outfile, morphology_smooth)
+outfile = os.path.join(dirname, basename_smooth)+'.smooth'
+morphology_smooth = np.load(outfile+'.npy')[cluster,:]
 
 print('Done!')
+
 ####################################################################################################
 # Perform PCA analysis
 ###################################################################################################
@@ -83,11 +63,6 @@ pca = principalComp(morphology_scaled)
 outfile = os.path.join(dirname, basename)+".pca.pkl"
 pk.dump(pca, open(outfile,"wb"))
 print('Done!')
-
-# print(pca.explained_variance_ratio_)
-# print(pca.n_components_,pca.n_features_,pca.n_samples_)
-# print(pca.singular_values_)
-# print(pca.components_)
 
 ####################################################################################################
 # Project principal components back to real space
@@ -109,7 +84,7 @@ if os.path.exists(outfile_covd) and os.path.exists(outfile_graph2covd):
     covdata = np.load(outfile_covd,allow_pickle=True)
     graph2covd = np.load(outfile_graph2covd,allow_pickle=True)
 else:
-    features = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(5,6,7,8,9,12,13,14))[cluster,:].reshape((A.shape[0],8)) #including X,Y
+    features = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(5,6,7,8,9,12,13,14))[cluster,:].reshape((sum(cluster),8)) #including X,Y
     covdata, graph2covd = covd(features,G,threshold,quantiles,node_color)
     np.save(outfile_covd,covdata)
     np.save(outfile_graph2covd,graph2covd)
@@ -131,8 +106,7 @@ X = np.vstack(logvec) #create the array of covd data
 standard_embedding = umap.UMAP(random_state=42).fit_transform(X)
 clusterable_embedding = umap.UMAP(n_neighbors=10,min_dist=0.0,n_components=2,random_state=42).fit_transform(X)
 
-labels = hdbscan.HDBSCAN(min_samples=10,min_cluster_size=50).fit_predict(clusterable_embedding)
-print(set(labels))
+labels = hdbscan.HDBSCAN(min_samples=5,min_cluster_size=10).fit_predict(clusterable_embedding)
 clustered = (labels >= 0)
 plt.scatter(standard_embedding[~clustered, 0],
             standard_embedding[~clustered, 1],
@@ -143,8 +117,7 @@ plt.scatter(standard_embedding[clustered, 0],
             standard_embedding[clustered, 1],
             c=labels[clustered],
             s=0.1,
-            cmap='Spectral');
-
+            cmap='Spectral')
 outfile = os.path.join(dirname, basename)+'.covd-clustering.png'
 plt.savefig(outfile) # save as png
 plt.close()
@@ -153,28 +126,29 @@ print('Done')
 ####################################################################################################
 # Color nodes by labels
 ###################################################################################################
-print('Color the graph by descriptor cluster')
-ind = 0
-node_cluster_color = np.zeros(node_color.shape)
-for item in graph2covd: # for each subgraph
-    node_cluster_color[list(item[0][1])] = labels[ind] # update node_color with cluster labels for each node in the subgraph
-    ind += 1
+if sum(clustered) > 0:
+    print('Color the graph by descriptor cluster')
+    ind = 0
+    node_cluster_color = -1*np.ones(node_color.shape)
+    for item in graph2covd: # for each subgraph
+        node_cluster_color[list(item[0][1])] = labels[ind] # update node_color with cluster labels for each node in the subgraph
+        ind += 1
 
-clustered = (node_cluster_color >= 0)
-clustered_nodes = np.asarray(list(G.nodes))[clustered] 
-clustered_nodes_color = node_cluster_color[clustered] 
-subG = G.subgraph(clustered_nodes)
+    clustered = (node_cluster_color >= 0)
+    clustered_nodes = np.asarray(list(G.nodes))[clustered] 
+    clustered_nodes_color = node_cluster_color[clustered] 
+    subG = G.subgraph(clustered_nodes)
 
-sns.set(style='white', rc={'figure.figsize':(50,50)})
-nx.draw_networkx_nodes(subG, pos, alpha=0.5,node_color=clustered_nodes_color, node_size=1,cmap='viridis')
-
-plt.margins(0,0)
-plt.gca().xaxis.set_major_locator(plt.NullLocator())
-plt.gca().yaxis.set_major_locator(plt.NullLocator())
-
-plt.axis('off')
-outfile = os.path.join(dirname, basename)+'.node-clustering.png'
-plt.savefig(outfile, dpi=100,bbox_inches = 'tight', pad_inches = 0.5) # save as png
-plt.close()
-print('Done!')
+    sns.set(style='white', rc={'figure.figsize':(50,50)})
+    nx.draw_networkx_nodes(subG, pos, alpha=0.5, node_color=clustered_nodes_color, node_size=1, cmap='viridis')
+    
+    plt.margins(0,0)
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+    
+    plt.axis('off')
+    outfile = os.path.join(dirname, basename)+'.node-clustering.png'
+    plt.savefig(outfile, dpi=100,bbox_inches = 'tight', pad_inches = 0.5) # save as png
+    plt.close()
+    print('Done!')
 
