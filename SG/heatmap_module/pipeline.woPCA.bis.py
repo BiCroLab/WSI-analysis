@@ -6,6 +6,8 @@ import sys
 from scipy import sparse, linalg
 import os
 import seaborn as sns; sns.set()
+import matplotlib
+matplotlib.use('TKAgg',warn=False, force=True)
 import matplotlib.pyplot as plt
 
 filename = sys.argv[1] # name of the morphology mesearements from qupath
@@ -93,14 +95,22 @@ print('Done!')
 ####################################################################################################
 # Get subgraphs from multi-features
 ###################################################################################################
-
-subgraphs, node_list = get_subgraphs(G,threshold,quantiles,node_colors)
-print(node_list)
-print(node_list.shape)
+print('Get the subgraphs')
+outfile_subgraphs = os.path.join(dirname, basename)+'.subgraphs.npy'
+outfile_node_list = os.path.join(dirname, basename)+'.node_list.npy'
+if os.path.exists(outfile_subgraphs) and os.path.exists(outfile_node_list):
+    subgraphs = np.load(outfile_subgraphs,allow_pickle=True)
+    node_list = np.load(outfile_node_list,allow_pickle=True)
+else:
+    subgraphs, node_list = get_subgraphs(G,threshold,quantiles,node_colors)
+    np.save(outfile_subgraphs,subgraphs)
+    np.save(outfile_node_list,node_list)
+print('Done!')
 
 U = G.subgraph(node_list)
-graphs = [g for g in list(nx.connected_component_subgraphs(U)) if g.number_of_nodes()>=threshold] # threshold graphs based on their size
-print([g.number_of_nodes() for g in graphs])
+graphs = [g for g in list(nx.connected_component_subgraphs(U)) if g.number_of_nodes()>=threshold] # this threshold check might be redundant
+# print('The list of nodes per graph is:')
+# print([g.number_of_nodes() for g in graphs])
 
 ####################################################################################################
 # Partition the graph and generate the covariance descriptors
@@ -112,7 +122,8 @@ if os.path.exists(outfile_covd) and os.path.exists(outfile_graph2covd):
     covdata = np.load(outfile_covd,allow_pickle=True)
     graph2covd = np.load(outfile_graph2covd,allow_pickle=True)
 else:
-    features = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(5,6,7,8,9,12,13,14)).reshape((A.shape[0],8)) #including X,Y
+    # features = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(5,6,7,8,9,12,13,14)).reshape((A.shape[0],8)) #including X,Y
+    features = np.hstack((pos,morphology_smooth)) # one should considere rotational invariant sqrt(x**2+y**2)
     covdata, graph2covd = covd_multifeature(features,G,subgraphs) # get list of cov matrices and a list of nodes per matrix
     np.save(outfile_covd,covdata)
     np.save(outfile_graph2covd,graph2covd)
@@ -129,10 +140,10 @@ from sklearn.metrics import adjusted_rand_score, adjusted_mutual_info_score
 logvec = [linalg.logm(m).reshape((1,16*16))  for m in covdata] #calculate the logm and vectorize
 X = np.vstack(logvec) #create the array of covd data
 
-standard_embedding = umap.UMAP(random_state=42).fit_transform(X)
-clusterable_embedding = umap.UMAP(n_neighbors=10,min_dist=0.0,n_components=2,random_state=42).fit_transform(X)
+standard_embedding = umap.UMAP(random_state=42).fit_transform(X) # this is used to plot
+clusterable_embedding = umap.UMAP(n_neighbors=30,min_dist=0.0,n_components=2,random_state=42).fit_transform(X) # this is used to identify clusters
 
-labels = hdbscan.HDBSCAN(min_samples=5,min_cluster_size=10).fit_predict(clusterable_embedding)
+labels = hdbscan.HDBSCAN(min_samples=10,min_cluster_size=50).fit_predict(clusterable_embedding)
 clustered = (labels >= 0)
 plt.scatter(standard_embedding[~clustered, 0],
             standard_embedding[~clustered, 1],
@@ -145,7 +156,7 @@ plt.scatter(standard_embedding[clustered, 0],
             s=0.1,
             cmap='Spectral');
 
-outfile = os.path.join(dirname, basename_smooth)+'.covd-clustering.png'
+outfile = os.path.join(dirname, basename)+'.covd-clustering.png'
 plt.savefig(outfile) # save as png
 plt.close()
 print('Done')
@@ -154,10 +165,6 @@ print('Done')
 ###################################################################################################
 
 print('Color the graph by descriptor cluster')
-# numb_nodes = 0
-# for nodes in graph2covd:
-#     numb_nodes += len(nodes)
-# print(numb_nodes)
 
 node_cluster_color = -1.0*np.ones(A.shape[0]) #check
 ind = 0
@@ -165,7 +172,8 @@ for nodes in graph2covd: # for each subgraph
     node_cluster_color[nodes] = labels[ind] # update node_color with cluster labels for each node in the subgraph
     ind += 1
 
-clustered = (node_cluster_color >= 0)
+clustered = (node_cluster_color >= 0) # bolean array with true for clustered nodes and false for the rest
+print(str(sum(clustered))+' nodes clustered of '+str(clustered.shape[0])+' in total')
 clustered_nodes = np.asarray(list(G.nodes))[clustered] 
 clustered_nodes_color = node_cluster_color[clustered] 
 subG = G.subgraph(clustered_nodes)
