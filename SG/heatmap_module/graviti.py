@@ -115,6 +115,37 @@ def covd(features,G,threshold,quantiles,node_color):
         covdata.append(covq)
     return covdata, graph2covd
 
+def get_subgraphs(G,threshold,quantiles,node_colors):
+    subgraphs = []
+    for f in range(node_colors.shape[1]): # for every feature
+        for q in range(quantiles):        # for every quantile
+            nodes = [n for n in np.where(node_colors[:,f] == q)[0]] #get the nodes
+            subG = G.subgraph(nodes) # build the subgraph
+            graphs = [g for g in list(nx.connected_component_subgraphs(subG)) if g.number_of_nodes()>=threshold] # threshold graphs based on their size
+            subgraphs.extend(graphs)
+    node_list = [list(g.nodes) for g in subgraphs]
+    flat_list = [n for sublist in node_list for n in sublist]
+    nodes = np.unique(np.array(flat_list))
+    return subgraphs,nodes
+
+def covd_multifeature(features,G,subgraphs):
+    L = nx.laplacian_matrix(G)
+    delta_features = L.dot(features)
+    data = np.hstack((features,delta_features)) #it has 16 features
+
+    covdata = [] # will contain a list for each quantile
+    graph2covd = []
+
+    for g in subgraphs:
+        nodeset = list(g.nodes)
+        dataset = data[nodeset]
+        covmat = np.cov(dataset,rowvar=False)
+        covdata.append(covmat)
+
+        graph2covd.append(list(g.nodes))
+            
+    return covdata, graph2covd
+
 def logdet_div(X,Y): #logdet divergence
     (sign_1, logdet_1) = np.linalg.slogdet(0.5*(X+Y)) 
     (sign_2, logdet_2) = np.linalg.slogdet(np.dot(X,Y))
