@@ -114,6 +114,7 @@ graphs = [g for g in list(nx.connected_component_subgraphs(U)) if g.number_of_no
 
 ####################################################################################################
 # Partition the graph and generate the covariance descriptors
+# TO DO: substitute x,y with the modulus of the vector
 ###################################################################################################
 print('Generate the covariance descriptor')
 outfile_covd = os.path.join(dirname, basename)+'.covd.npy'
@@ -130,6 +131,7 @@ else:
 print('Done!')
 ####################################################################################################
 # Cluster the covariance descriptors
+# TO DO: need to adjust clustering parameters to the statistics of the subgraph partitioning and try OPTICS instead of HDBSCAN
 ###################################################################################################
 print('Cluster the descriptors')
 import umap
@@ -154,7 +156,7 @@ plt.scatter(standard_embedding[clustered, 0],
             standard_embedding[clustered, 1],
             c=labels[clustered],
             s=0.1,
-            cmap='Spectral');
+            cmap='viridis');
 
 outfile = os.path.join(dirname, basename)+'.covd-clustering.png'
 plt.savefig(outfile) # save as png
