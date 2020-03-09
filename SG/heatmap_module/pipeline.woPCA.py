@@ -14,12 +14,12 @@ import matplotlib.pyplot as plt
 filename = sys.argv[1] # name of the morphology mesearements from qupath
 radius = int(sys.argv[2])   # for smoothing
 quantiles = int(sys.argv[3]) # for stratifing the projection
-threshold = int(sys.argv[4]) # min number of nodes in a subgraph
+#threshold = int(sys.argv[4]) # min number of nodes in a subgraph
 
 basename_graph = os.path.splitext(os.path.basename(filename))[0]
 basename_smooth = os.path.splitext(os.path.splitext(os.path.basename(filename))[0])[0]+'.r'+str(radius)
 if os.path.splitext(os.path.basename(filename))[1] == '.gz':
-    basename = os.path.splitext(os.path.splitext(os.path.basename(filename))[0])[0]+'.r'+str(radius)+'.q'+str(quantiles)+'.t'+str(threshold)
+    basename = os.path.splitext(os.path.splitext(os.path.basename(filename))[0])[0]+'.r'+str(radius)+'.q'+str(quantiles)
 elif os.path.splitext(os.path.basename(filename))[1] == '.txt':
     basename = os.path.splitext(os.path.basename(filename))[0]
 dirname = os.path.dirname(filename)
@@ -67,6 +67,7 @@ pos2norm = np.linalg.norm(pos,axis=1).reshape((pos.shape[0],1)) # the modulus of
 
 # Features list =  Nucleus:_Area   Nucleus:_Perimeter      Nucleus:_Circularity    Nucleus:_Eccentricity   Nucleus:_Hematoxylin_OD_mean    Nucleus:_Hematoxylin_OD_sum
 morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(7,8,9,12,13,14)).reshape((A.shape[0],6))
+threshold = (morphology.shape[1]+2)*2 # set the min subgraph size based on the dim of the feature matrix
 
 ####################################################################################################
 # Smooth the morphology
@@ -85,12 +86,12 @@ print('Done!')
 ####################################################################################################
 # Stratify morphologies
 ###################################################################################################
-print('Project back to real space')
+print('Stratify morphologies')
 import pandas as pd
 
-node_colors = np.zeros(morphology.shape)
+node_quantiles = np.zeros(morphology.shape)
 for f in range(morphology.shape[1]):
-    node_colors[:,f] = pd.qcut(morphology_smooth[:,f].ravel(), quantiles, labels=False)
+    node_quantiles[:,f] = pd.qcut(morphology_smooth[:,f].ravel(), quantiles, labels=False)
 
 print('Done!')
 
@@ -99,42 +100,41 @@ print('Done!')
 ###################################################################################################
 print('Get the subgraphs')
 outfile_subgraphs = os.path.join(dirname, basename)+'.subgraphs.npy'
-outfile_node_list = os.path.join(dirname, basename)+'.node_list.npy'
-if os.path.exists(outfile_subgraphs) and os.path.exists(outfile_node_list):
+outfile_subgraphs_union = os.path.join(dirname, basename)+'.subgraphs_union.npy'
+if os.path.exists(outfile_subgraphs):
+    print('... loading the subgraphs ...')
     subgraphs = np.load(outfile_subgraphs,allow_pickle=True)
-    node_list = np.load(outfile_node_list,allow_pickle=True)
 else:
-    subgraphs, node_list = get_subgraphs(G,threshold,quantiles,node_colors) # subgraph above threshold and flatten list of nodes
+    print('... creating the subgraphs ...')
+    subgraphs = get_subgraphs(G,threshold,quantiles,node_quantiles) # subgraph above threshold 
     np.save(outfile_subgraphs,subgraphs)
-    np.save(outfile_node_list,node_list)
-print('Done!')
 
-U = G.subgraph(node_list)
-graphs = [g for g in list(nx.connected_component_subgraphs(U))] # this threshold check might be redundant
-# print('The list of nodes per graph is:')
-# print([g.number_of_nodes() for g in graphs])
+print('Done!')
 
 ####################################################################################################
 # Partition the graph and generate the covariance descriptors
+# this can be done with respect to raw features or smoothed ones
 ###################################################################################################
 print('Generate the covariance descriptor')
 outfile_covd = os.path.join(dirname, basename)+'.covd.npy'
 outfile_graph2covd = os.path.join(dirname, basename)+'.graph2covd.npy'
 if os.path.exists(outfile_covd) and os.path.exists(outfile_graph2covd):
+    print('... loading the descriptors ...')
     covdata = np.load(outfile_covd,allow_pickle=True)
     graph2covd = np.load(outfile_graph2covd,allow_pickle=True)
 else:
-    features = np.hstack((pos2norm,morphology_smooth)) # this is rotational invariant
+    print('... creating the descriptors ...')
+    features = np.hstack((pos2norm,morphology_smooth))            # this is rotational invariant
     covdata, graph2covd = covd_multifeature(features,G,subgraphs) # get list of cov matrices and a list of nodes per matrix
     np.save(outfile_covd,covdata)
     np.save(outfile_graph2covd,graph2covd)
+
 print('Done!')
 
 ####################################################################################################
 # Cluster the covariance descriptors
-# TO DO: need to adjust clustering parameters to the statistics of the subgraph partitioning and try OPTICS instead of HDBSCAN
 ###################################################################################################
-print('Cluster the descriptors')
+print('Clustering the descriptors')
 import umap
 import hdbscan
 import sklearn.cluster as cluster
@@ -145,7 +145,7 @@ logvec = [linalg.logm(m).reshape((1,covdata[0].shape[0]*covdata[0].shape[1]))  f
 X = np.vstack(logvec) #create the array of vectorized covd data
 
 standard_embedding = umap.UMAP(random_state=42).fit_transform(X) # this is used to plot
-clusterable_embedding = umap.UMAP(n_neighbors=30,min_dist=0.0,n_components=4,random_state=42).fit_transform(X) # this is used to identify clusters
+clusterable_embedding = umap.UMAP(n_neighbors=10,min_dist=0.0,n_components=3,random_state=42).fit_transform(X) # this is used to identify clusters
 
 # labels = hdbscan.HDBSCAN(min_samples=25,min_cluster_size=50).fit_predict(clusterable_embedding)
 labels = OPTICS().fit(clusterable_embedding).labels_
@@ -166,6 +166,7 @@ outfile = os.path.join(dirname, basename)+'.covd-clustering.png'
 plt.savefig(outfile) # save as png
 plt.close()
 print('Done')
+
 ####################################################################################################
 # Color nodes by labels
 ###################################################################################################
@@ -174,7 +175,7 @@ print('Color the graph by descriptor cluster')
 
 node_cluster_color = -1.0*np.ones(A.shape[0]) #check
 ind = 0
-for nodes in graph2covd: # for each subgraph
+for nodes in graph2covd:                    # for each subgraph
     node_cluster_color[nodes] = labels[ind] # update node_color with cluster labels for each node in the subgraph
     ind += 1
 
@@ -197,3 +198,14 @@ plt.savefig(outfile, dpi=100,bbox_inches = 'tight', pad_inches = 0.5) # save as 
 plt.close()
 print('Done!')
 
+#############################################
+# THE GRAPH UNION IS TOO SLOW
+# if os.path.exists(outfile_subgraphs_union):
+#     print('... loading the union graph ...')
+#     subgraphs_union = np.load(outfile_subgraphs,allow_pickle=True)
+# else:
+#     print('... creating the union graph ...')
+#     U = nx.compose_all(subgraphs) # unione graph to detect intersection between morphologically different (eg area and perimeter) subgraphs; this will associate a single descriptor for each node
+#     print('... determining the subgraphs of the union graph ...')
+#     subgraphs_union = [g for g in list(nx.connected_component_subgraphs(U))]
+#     np.save(outfile_subgraphs_union,subgraphs_union)

@@ -115,18 +115,15 @@ def covd(features,G,threshold,quantiles,node_color):
         covdata.append(covq)
     return covdata, graph2covd
 
-def get_subgraphs(G,threshold,quantiles,node_colors):
+def get_subgraphs(G,threshold,quantiles,node_quantiles):
     subgraphs = []
-    for f in range(node_colors.shape[1]): # for every feature
+    for f in range(node_quantiles.shape[1]): # for every feature
         for q in range(quantiles):        # for every quantile
-            nodes = [n for n in np.where(node_colors[:,f] == q)[0]] #get the nodes
+            nodes = [n for n in np.where(node_quantiles[:,f] == q)[0]] #get the nodes
             subG = G.subgraph(nodes) # build the subgraph
             graphs = [g for g in list(nx.connected_component_subgraphs(subG)) if g.number_of_nodes()>=threshold] # threshold graphs based on their size
             subgraphs.extend(graphs)
-    node_list = [list(g.nodes) for g in subgraphs]
-    flat_list = [n for sublist in node_list for n in sublist]
-    nodes = np.unique(np.array(flat_list))
-    return subgraphs,nodes
+    return subgraphs
 
 def covd_multifeature(features,G,subgraphs):
     L = nx.laplacian_matrix(G)
