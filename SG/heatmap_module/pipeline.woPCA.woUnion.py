@@ -101,11 +101,9 @@ print('Done!')
 ###################################################################################################
 print('Get the subgraphs')
 outfile_subgraphs = os.path.join(dirname, basename)+'.subgraphs.npy'
-outfile_nodes = os.path.join(dirname, basename)+'.subgraphs_nodes.npy'
-if os.path.exists(outfile_subgraphs) and os.path.exists(outfile_nodes):
+if os.path.exists(outfile_subgraphs):
     print('... loading the subgraphs ...')
     subgraphs = np.load(outfile_subgraphs,allow_pickle=True)
-    unique_nodes = np.load(outfile_nodes,allow_pickle=True)
 else:
     print('... creating the subgraphs ...')
     # subgraph above threshold with thresh large enough to filter part of the nodes otherwise the union graph will be the entire graph
@@ -115,17 +113,6 @@ else:
     np.save(outfile_nodes,unique_nodes)
 
 print('There are '+str(len(subgraphs))+' subgraphs ')
-print('There are '+str(len(unique_nodes))+' unique nodes in the subgraphs ')
-
-outfile_subgraphs_union = os.path.join(dirname, basename)+'.subgraphs_union.npy'
-if os.path.exists(outfile_subgraphs_union):
-    print('... loading the subgraphs union ...')
-    subgraphs_union = np.load(outfile_subgraphs_union,allow_pickle=True)
-else:
-    print('... creating the subgraph union ...')
-    U = G.subgraph(unique_nodes)
-    subgraphs_union = [g for g in list(nx.connected_component_subgraphs(U))]
-    np.save(outfile_subgraphs_union,subgraphs_union)
 
 print('Done')
 
@@ -134,18 +121,19 @@ print('Done')
 # this can be done with respect to raw features or smoothed ones
 ###################################################################################################
 print('Generate the covariance descriptor')
+features = np.hstack((pos2norm,morphology))            # this is rotational invariant
+
 outfile_covd = os.path.join(dirname, basename)+'.covd.npy'
 outfile_graph2covd = os.path.join(dirname, basename)+'.graph2covd.npy'
-# if os.path.exists(outfile_covd) and os.path.exists(outfile_graph2covd):
-#     print('... loading the descriptors ...')
-#     covdata = np.load(outfile_covd,allow_pickle=True)
-#     graph2covd = np.load(outfile_graph2covd,allow_pickle=True)
-# else:
-print('... creating the descriptors ...')
-features = np.hstack((pos2norm,morphology))            # this is rotational invariant
-covdata, graph2covd = covd_multifeature(features,G,subgraphs) # get list of cov matrices and a list of nodes per matrix
-np.save(outfile_covd,covdata)
-np.save(outfile_graph2covd,graph2covd)
+if os.path.exists(outfile_covd) and os.path.exists(outfile_graph2covd):
+    print('... loading the descriptors ...')
+    covdata = np.load(outfile_covd,allow_pickle=True)
+    graph2covd = np.load(outfile_graph2covd,allow_pickle=True)
+else:
+    print('... creating the descriptors ...')
+    covdata, graph2covd = covd_multifeature(features,G,subgraphs) # get list of cov matrices and a list of nodes per matrix
+    np.save(outfile_covd,covdata)
+    np.save(outfile_graph2covd,graph2covd)
 
 print('There are '+str(len(covdata))+' covariance descriptors ')
 
@@ -168,15 +156,19 @@ clusterable_embedding = umap.UMAP(n_neighbors=30,min_dist=0.0,n_components=2,ran
 # labels = hdbscan.HDBSCAN(min_samples=25,min_cluster_size=50).fit_predict(clusterable_embedding)
 labels = OPTICS().fit(clusterable_embedding).labels_ # cluster label vector of covmatrices
 
-clustered = (labels >= 0)
-plt.scatter(standard_embedding[~clustered, 0],
-            standard_embedding[~clustered, 1],
+clusteredD = (labels >= 0)
+non_clusteredD = (labels < 0)
+print(str(sum(clusteredD))+' descriptors clustered of '+str(labels.shape[0])+' in total')
+print(str(sum(non_clusteredD))+' descriptors NOT clustered of '+str(labels.shape[0])+' in total')
+
+plt.scatter(standard_embedding[~clusteredD, 0],
+            standard_embedding[~clusteredD, 1],
             c='k',#(0.5, 0.5, 0.5),
             s=0.1,
             alpha=0.5)
-plt.scatter(standard_embedding[clustered, 0],
-            standard_embedding[clustered, 1],
-            c=labels[clustered],
+plt.scatter(standard_embedding[clusteredD, 0],
+            standard_embedding[clusteredD, 1],
+            c=labels[clusteredD],
             s=0.1,
             cmap='viridis');
 
@@ -197,10 +189,14 @@ for nodes in graph2covd:                    # for each subgraph and correspondin
     node_cluster_color[nodes] = labels[ind] # update node_color with cluster labels for each node in the subgraph
     ind += 1
 
-clustered = (node_cluster_color >= 0) # bolean array with true for clustered nodes and false for the rest
-print(str(sum(clustered))+' nodes clustered of '+str(clustered.shape[0])+' in total')
-clustered_nodes = np.asarray(list(G.nodes))[clustered] 
-clustered_nodes_color = node_cluster_color[clustered] 
+clusteredN = (node_cluster_color >= 0) # bolean array with true for clustered nodes and false for the rest
+print(str(sum(clusteredN))+' nodes clustered of '+str(clusteredN.shape[0])+' in total')
+
+non_clusteredN = (node_cluster_color < 0) # bolean array with true for clustered nodes and false for the rest
+print(str(sum(non_clusteredN))+' nodes NOT clustered of '+str(clusteredN.shape[0])+' in total')
+
+clustered_nodes = np.asarray(list(G.nodes))[clusteredN] 
+clustered_nodes_color = node_cluster_color[clusteredN] 
 subG = G.subgraph(clustered_nodes)
 
 sns.set(style='white', rc={'figure.figsize':(50,50)})
@@ -216,14 +212,38 @@ plt.savefig(outfile, dpi=100,bbox_inches = 'tight', pad_inches = 0.5) # save as 
 plt.close()
 print('Done!')
 
-#############################################
-# THE GRAPH UNION IS TOO SLOW
-# if os.path.exists(outfile_subgraphs_union):
-#     print('... loading the union graph ...')
-#     subgraphs_union = np.load(outfile_subgraphs,allow_pickle=True)
-# else:
-#     print('... creating the union graph ...')
-#     U = nx.compose_all(subgraphs) # unione graph to detect intersection between morphologically different (eg area and perimeter) subgraphs; this will associate a single descriptor for each node
-#     print('... determining the subgraphs of the union graph ...')
-#     subgraphs_union = [g for g in list(nx.connected_component_subgraphs(U))]
-#     np.save(outfile_subgraphs_union,subgraphs_union)
+####################################################################################################
+# Color nodes not clustered before
+###################################################################################################
+print('Determine the connected components of the non clustered nodes')
+
+non_clustered_nodes = np.asarray(list(G.nodes))[non_clusteredN] 
+subGnot = G.subgraph(non_clustered_nodes)
+graphs = [g for g in list(nx.connected_component_subgraphs(subGnot)) if g.number_of_nodes()>=20]
+
+print('Determine covariance matrix of the non clustered connected components')
+covdata, graph2covd = covd_multifeature(features,G,graphs) 
+
+logvec = [linalg.logm(m).reshape((1,covdata[0].shape[0]*covdata[0].shape[1])) for m in covdata] #calculate the logm and vectorize
+X_nonclustered = np.vstack(logvec) #create the array of vectorized covd data
+
+from scipy import spatial
+reference = X[clusteredD,:]
+tree = spatial.KDTree(reference)
+for row_ind in range(X_nonclustered.shape[0]):
+    index = tree.query(X_nonclustered[row_ind,:])[1]
+    for nodes in graph2covd:                    
+        node_cluster_color[nodes] = labels[index] 
+
+sns.set(style='white', rc={'figure.figsize':(50,50)})
+nx.draw_networkx_nodes(G, pos, alpha=0.5,node_color=node_cluster_color, node_size=1,cmap='viridis')
+
+plt.margins(0,0)
+plt.gca().xaxis.set_major_locator(plt.NullLocator())
+plt.gca().yaxis.set_major_locator(plt.NullLocator())
+
+plt.axis('off')
+outfile = os.path.join(dirname, basename)+'.all-node-clustering.png'
+plt.savefig(outfile, dpi=100,bbox_inches = 'tight', pad_inches = 0.5) # save as png
+plt.close()
+
