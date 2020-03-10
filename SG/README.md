@@ -17,13 +17,13 @@ Is the 1-simplex originated by UMAP in the uniform manifold approximation step. 
 By constructing the graph Laplacian we can measure the differential structure of morphological and topological features
 ### Selection of relevant morphological and topological features
 Decide which features to include in the downstream analysis
-### Normalization of the feature set
-Normalize features in order to have a meaningful inter-feature comparison. Some have values in the range [0,1] (like circularity and eccentricity), others have values in a different range (like area, perimeter, intensinsity, etc).
-### PCA of the feature matrix
-Find the major direction of variations in the data
-### Projection on real space of the principal components
-Picture the spatial distribution of the principal components
-### Partitioning of reals space based on projected components
-Find spatio-morphological communities
+### Stratification of individual morphometric feature
+Divide in quantiles the range of values for each morphometric feature
+### Subgraph creation
+For each morphometric feature and quantile pair list all connected subgraphs such that every node in the subgraph belong to the same feature-quantile pair, and such that the number of nodes in the connected subgraph is above a threshold 
 ### Covariance descriptor of the partitions
-Construct the covariance descriptor for each community/partition
+Construct the covariance descriptor for each subgraph
+### Clustering of the descriptors
+Cluster the covariance descriptors
+### Assign unlabelled nodes to clusters
+Determined the connected components of the unlabelled nodes (above a given threshold in size) and for each component construct its covariance descriptor and find the closed descriptor in the set of clustered descriptor. The new descriptor will inherit the same cluster label
