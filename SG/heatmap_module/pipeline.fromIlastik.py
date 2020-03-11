@@ -32,17 +32,16 @@ dirname = os.path.dirname(filename)
 print('Prepare the topological graph ...')
 nn = 10 # this is hardcoded at the moment
 path = os.path.join(dirname, basename_graph)+'.nn'+str(nn)+'.adj.npz'
-
 if os.path.exists(path) and os.path.exists( os.path.join(dirname, basename_graph) + ".graph.pickle" ):
     print('The graph exists already')
     A = sparse.load_npz(path) #id...graph.npz
-    pos = np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(5,6)) # here there is no header
+    pos = np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(1,2)) # here there is no header
     G = nx.read_gpickle(os.path.join(dirname, basename_graph) + ".graph.pickle")
     d = getdegree(G)
     cc = clusteringCoeff(A)
 else:
     print('The graph does not exists yet')
-    pos = np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(5,6)) # here there is no header
+    pos = np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(1,2)) # here there is no header
     A = space2graph(pos,nn)
     sparse.save_npz(path, A)
     G = nx.from_scipy_sparse_matrix(A, edge_attribute='weight')
@@ -63,8 +62,7 @@ pos2norm = np.linalg.norm(pos,axis=1).reshape((pos.shape[0],1)) # the modulus of
 ###################################################################################################
 
 # Features list =  Nucleus:_Area   Nucleus:_Perimeter      Nucleus:_Circularity    Nucleus:_Eccentricity   Nucleus:_Hematoxylin_OD_mean    Nucleus:_Hematoxylin_OD_sum
-# morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(7,8,9,12,13,14)).reshape((A.shape[0],6))
-morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(7,8,9,12,13,14)).reshape((A.shape[0],6))
+morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(3,4,5,6,7,8)).reshape((A.shape[0],6))  #no header
 threshold = max(radius,(morphology.shape[1]+4)*2) # set the min subgraph size based on the dim of the feature matrix
 
 ####################################################################################################
@@ -109,7 +107,6 @@ else:
     
 print('There are '+str(len(subgraphs))+' subgraphs ')
 print('There are '+str(len(unique_nodes))+' unique nodes in the subgraphs ')
-
 
 ####################################################################################################
 # Generate the covariance descriptors
@@ -201,7 +198,7 @@ print('Color the graph by descriptor cluster')
 node_cluster_color = -1.0*np.ones(A.shape[0]) #check
 ind = 0                                     # this is the subgraph label
 for nodes in graph2covd:                    # for each subgraph and corresponding covariance matrix
-    node_cluster_color[nodes] = labels[ind] # update node_color with cluster labels for each node in the subgraph
+    node_cluster_color[nodes] = labels[ind] # update node_color with cluster labels for each node in the subgraph; if a node belongs to more than a subgraph it will change color
     ind += 1
 
 clusteredN = (node_cluster_color >= 0) # bolean array with true for clustered nodes and false for the rest
@@ -232,23 +229,23 @@ plt.close()
 ###################################################################################################
 print('Determine the connected components of the non clustered nodes')
 
-non_clustered_nodes = np.asarray(list(G.nodes))[non_clusteredN] 
-subGnot = G.subgraph(non_clustered_nodes)
-graphs = [g for g in list(nx.connected_component_subgraphs(subGnot)) if g.number_of_nodes()>=20]
+non_clustered_nodes = np.asarray(list(G.nodes))[non_clusteredN] # the nodes that are not clustered
+subGnot = G.subgraph(non_clustered_nodes)                       # their subgraph
+graphs = [g for g in list(nx.connected_component_subgraphs(subGnot)) if g.number_of_nodes()>=20] # the connected components of the non clustered nodes
 
 print('Determine covariance matrix of the non clustered connected components')
 covdata, graph2covd = covd_multifeature(features,G,graphs) 
 logvec = [linalg.logm(m).reshape((1,covdata[0].shape[0]*covdata[0].shape[1])) for m in covdata] #calculate the logm and vectorize
 X_nonclustered = np.vstack(logvec) #create the array of vectorized covd data
 
-print('Cluster the other connected components by finding the min distance to the clustered subgraphs')
+print('Cluster the new descriptors by finding the min distance to the clustered descriptors')
 from scipy import spatial
-reference = X[clusteredD,:]
-tree = spatial.KDTree(reference)
+reference = X[clusteredD,:]     # the clustered descriptors
+tree = spatial.KDTree(reference) 
 for row_ind in range(X_nonclustered.shape[0]):
-    index = tree.query(X_nonclustered[row_ind,:])[1]
-    for nodes in graph2covd:                    
-        node_cluster_color[nodes] = labels[index] 
+    index = tree.query(X_nonclustered[row_ind,:])[1] # find the clustered descriptor closer to the new descriptor
+    for nodes in graph2covd:    # for each new descriptor
+        node_cluster_color[nodes] = labels[index] # color its nodes with the color of the closer descriptor; nodes could belong to different descriptors and change color
 
 sns.set(style='white', rc={'figure.figsize':(50,50)})
 nx.draw_networkx_nodes(G, pos, alpha=0.5,node_color=node_cluster_color, node_size=1,cmap='viridis')

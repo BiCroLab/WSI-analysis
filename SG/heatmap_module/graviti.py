@@ -13,8 +13,8 @@ warnings.filterwarnings('ignore')
 from sklearn.preprocessing import normalize
 import numba
 
-def space2graph(filename,nn):
-    XY = np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(5,6))
+def space2graph(positions,nn):
+    XY = positions#np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(5,6))
     mat_XY = umap.umap_.fuzzy_simplicial_set(
         XY,
         n_neighbors=nn, 
@@ -28,24 +28,7 @@ def space2graph(filename,nn):
         local_connectivity=2.0,
         verbose=False
     )
-    return mat_XY, XY
-
-def space2graph_cluster(filename,cluster,nn):
-    XY = np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(5,6))[cluster,:]
-    mat_XY = umap.umap_.fuzzy_simplicial_set(
-        XY,
-        n_neighbors=nn, 
-        random_state=np.random.RandomState(seed=42),
-        metric='l2',
-        metric_kwds={},
-        knn_indices=None,
-        knn_dists=None,
-        angular=False,
-        set_op_mix_ratio=1.0,
-        local_connectivity=2.0,
-        verbose=False
-    )
-    return mat_XY, XY
+    return mat_XY
 
 def getdegree(graph):
     d = np.asarray(graph.degree(weight='weight'))[:,1] # as a (N,) array
