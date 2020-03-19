@@ -94,8 +94,8 @@ def covd(features,G,threshold,quantiles,node_color):
             new_graph2covd = list(zip(quant_graph,tuple_nodes))
             graph2covd.append(new_graph2covd)
             g_id += 1
-            
         covdata.append(covq)
+
     return covdata, graph2covd
 
 def get_subgraphs(G,threshold,quantiles,node_quantiles):
@@ -105,7 +105,7 @@ def get_subgraphs(G,threshold,quantiles,node_quantiles):
         for q in range(quantiles):        # for every quantile
             nodes = [n for n in np.where(node_quantiles[:,f] == q)[0]] #get the nodes
             subG = G.subgraph(nodes) # build the subgraph
-            graphs = [g for g in list(nx.connected_component_subgraphs(subG)) if g.number_of_nodes()>=threshold] # threshold graphs based on their size
+            graphs = [g for g in list(nx.connected_component_subgraphs(subG)) if g.number_of_nodes()>=threshold] # threshold connected components in subG based on their size
             subgraphs.extend(graphs)
 
             node_subset = [list(g.nodes) for g in graphs]
@@ -132,6 +132,21 @@ def covd_multifeature(features,G,subgraphs):
             
     return covdata, graph2covd
 
+def community_covd(features,G,subgraphs):
+    L = nx.laplacian_matrix(G)
+    delta_features = L.dot(features)
+    data = np.hstack((features,delta_features)) #it has 16 features
+
+    covdata = [] # will contain a list for each quantile
+    
+    for g in subgraphs:
+        nodes = [int(n) for n in g]
+        dataset = data[nodes]
+        covmat = np.cov(dataset,rowvar=False)
+        covdata.append(covmat)
+        
+    return covdata
+
 def logdet_div(X,Y): #logdet divergence
     (sign_1, logdet_1) = np.linalg.slogdet(0.5*(X+Y)) 
     (sign_2, logdet_2) = np.linalg.slogdet(np.dot(X,Y))
@@ -141,3 +156,20 @@ def airm(X,Y): #affine invariant riemannian metric
     A = np.linalg.inv(linalg.sqrtm(X))
     B = np.dot(A,np.dot(Y,A))
     return np.linalg.norm(linalg.logm(B))
+
+def cluster_morphology(morphology,graph2covd,labels):
+    nodes_in_cluster = []
+    numb_of_clusters = len(set(labels))
+    cluster_mean = np.zeros((numb_of_clusters,morphology.shape[1]))
+    if -1 in set(labels):
+        for cluster in set(labels):
+            nodes_in_cluster.extend([graph2covd[ind] for ind in range(len(graph2covd)) if labels[ind] == cluster ])
+            nodes = [item for sublist in nodes_in_cluster for item in sublist]
+            ind = int(cluster)+1
+            cluster_mean[ind,:] = np.mean(morphology[nodes,:],axis=0)
+    else:
+        for cluster in set(labels):
+            nodes_in_cluster.extend([graph2covd[ind] for ind in range(len(graph2covd)) if labels[ind] == cluster ])
+            nodes = [item for sublist in nodes_in_cluster for item in sublist]
+            cluster_mean[cluster,:] = np.mean(morphology[nodes,:],axis=0)
+    return cluster_mean

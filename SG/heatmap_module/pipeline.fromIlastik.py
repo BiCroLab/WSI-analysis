@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 filename = sys.argv[1] # name of the morphology mesearements from qupath
 radius = int(sys.argv[2])   # for smoothing
 quantiles = int(sys.argv[3]) # for stratifing the projection
-#threshold = int(sys.argv[4]) # min number of nodes in a subgraph
 
 basename_graph = os.path.splitext(os.path.basename(filename))[0]
 basename_smooth = os.path.splitext(os.path.splitext(os.path.basename(filename))[0])[0]+'.r'+str(radius)
@@ -113,7 +112,7 @@ print('There are '+str(len(unique_nodes))+' unique nodes in the subgraphs ')
 # this can be done with respect to raw features or smoothed ones
 ###################################################################################################
 print('Generate the covariance descriptor')
-features = np.hstack((pos2norm,morphology))            # this is rotational invariant
+features = np.hstack((pos2norm,morphology_smooth))            # this is rotational invariant
 
 outfile_covd = os.path.join(dirname, basename)+'.covd.npy'
 outfile_graph2covd = os.path.join(dirname, basename)+'.graph2covd.npy'
@@ -153,110 +152,119 @@ else:
     np.save(outfile_logvec,X)
     
 outfile_clusterable_embedding = os.path.join(dirname, basename)+'.clusterable_embedding.npy'
-if os.path.exists(outfile_clusterable_embedding):
+if False:#os.path.exists(outfile_clusterable_embedding):
     print('...load the clusterable embedding...')
-    clusterable_embedding = np.load(outfile_clusterable_embedding,allow_pickle=True)
+    clusterable_embedding = np.load(outfile_clusterable_embedding, allow_pickle=True)
 else:
     print('...create the clusterable embedding...')
-    # clusterable_embedding = umap.UMAP(n_neighbors=50,min_dist=0.0,n_components=2,random_state=42).fit_transform(X) # this is used to identify clusters
-    clusterable_embedding = umap.UMAP(min_dist=0.0,n_components=2,random_state=42).fit_transform(X) # this is used to identify clusters
-    np.save(outfile_clusterable_embedding,clusterable_embedding)
+    # clusterable_embedding = umap.UMAP(min_dist=0.0,n_components=2,random_state=42).fit_transform(X) # this is used to identify clusters
+    clusterable_embedding = umap.UMAP(min_dist=0.0, n_components=3, random_state=42).fit_transform(X) # this is used to identify clusters
+    np.save(outfile_clusterable_embedding, clusterable_embedding)
 
-print('...cluster the descriptors...')
-# labels = hdbscan.HDBSCAN(min_samples=50,min_cluster_size=100).fit_predict(clusterable_embedding)
-# labels = OPTICS().fit_predict(clusterable_embedding) # cluster label vector of covmatrices
-# labels = AgglomerativeClustering(n_clusters=3).fit_predict(clusterable_embedding)
-labels = SpectralClustering(n_clusters=3,assign_labels="discretize",random_state=42).fit_predict(clusterable_embedding)
+# # print('...cluster the descriptors...')
+# # # labels = hdbscan.HDBSCAN(min_samples=50,min_cluster_size=100).fit_predict(clusterable_embedding)
+# labels = OPTICS(min_samples=5).fit_predict(clusterable_embedding) # cluster label vector of covmatrices
+# # labels = AgglomerativeClustering(n_clusters=3).fit_predict(clusterable_embedding)
+# # labels = SpectralClustering(n_clusters=3,assign_labels="discretize",random_state=42).fit_predict(clusterable_embedding)
+# print('The are ',str(len(set(labels))),' clusters')
 
-print('...plot the clusters...')
-clusteredD = (labels >= 0)
-non_clusteredD = (labels < 0)
-print(str(sum(clusteredD))+' descriptors clustered of '+str(labels.shape[0])+' in total')
-print(str(sum(non_clusteredD))+' descriptors NOT clustered of '+str(labels.shape[0])+' in total')
+# outfile_cluster_labels = os.path.join(dirname, basename)+'.cluster_labels.npy'
+# np.save(outfile_cluster_labels, labels)
 
-plt.scatter(clusterable_embedding[~clusteredD, 0],
-            clusterable_embedding[~clusteredD, 1],
-            c='k',#(0.5, 0.5, 0.5),
-            s=0.1,
-            alpha=0.5)
-plt.scatter(clusterable_embedding[clusteredD, 0],
-            clusterable_embedding[clusteredD, 1],
-            c=labels[clusteredD],
-            s=0.1,
-            cmap='viridis');
+# cluster_features = cluster_morphology(morphology_smooth,graph2covd,labels)
+# outfile_cluster_features = os.path.join(dirname, basename)+'.cluster_features.npy'
+# print('The shape of the cluster feature matrix is ',str(cluster_features.shape))
+# np.save(outfile_cluster_features, cluster_features)
 
-outfile = os.path.join(dirname, basename)+'.covd-clustering.png'
-plt.savefig(outfile) # save as png
-plt.close()
+# print('...plot the clusters...')
+# clusteredD = (labels >= 0)
+# non_clusteredD = (labels < 0)
+# print(str(sum(clusteredD))+' descriptors clustered of '+str(labels.shape[0])+' in total')
+# print(str(sum(non_clusteredD))+' descriptors NOT clustered of '+str(labels.shape[0])+' in total')
 
-####################################################################################################
-# Color nodes by labels
-###################################################################################################
+# plt.scatter(clusterable_embedding[~clusteredD, 0],
+#             clusterable_embedding[~clusteredD, 1],
+#             c='k',#(0.5, 0.5, 0.5),
+#             s=0.1,
+#             alpha=0.5)
+# plt.scatter(clusterable_embedding[clusteredD, 0],
+#             clusterable_embedding[clusteredD, 1],
+#             c=labels[clusteredD],
+#             s=0.1,
+#             cmap='viridis');
 
-print('Color the graph by descriptor cluster')
+# outfile = os.path.join(dirname, basename)+'.covd-clustering.png'
+# plt.savefig(outfile) # save as png
+# plt.close()
 
-node_cluster_color = -1.0*np.ones(A.shape[0]) #check
-ind = 0                                     # this is the subgraph label
-for nodes in graph2covd:                    # for each subgraph and corresponding covariance matrix
-    node_cluster_color[nodes] = labels[ind] # update node_color with cluster labels for each node in the subgraph; if a node belongs to more than a subgraph it will change color
-    ind += 1
+# ####################################################################################################
+# # Color nodes by labels
+# ###################################################################################################
 
-clusteredN = (node_cluster_color >= 0) # bolean array with true for clustered nodes and false for the rest
-print(str(sum(clusteredN))+' nodes clustered of '+str(clusteredN.shape[0])+' in total')
+# print('Color the graph by descriptor cluster')
 
-non_clusteredN = (node_cluster_color < 0) # bolean array with true for clustered nodes and false for the rest
-print(str(sum(non_clusteredN))+' nodes NOT clustered of '+str(clusteredN.shape[0])+' in total')
+# node_cluster_color = -1.0*np.ones(A.shape[0]) #check
+# ind = 0                                     # this is the subgraph label
+# for nodes in graph2covd:                    # for each subgraph and corresponding covariance matrix
+#     node_cluster_color[nodes] = labels[ind] # update node_color with cluster labels for each node in the subgraph; if a node belongs to more than a subgraph it will change color
+#     ind += 1
 
-clustered_nodes = np.asarray(list(G.nodes))[clusteredN] 
-clustered_nodes_color = node_cluster_color[clusteredN] 
-subG = G.subgraph(clustered_nodes)
+# clusteredN = (node_cluster_color >= 0) # bolean array with true for clustered nodes and false for the rest
+# print(str(sum(clusteredN))+' nodes clustered of '+str(clusteredN.shape[0])+' in total')
 
-sns.set(style='white', rc={'figure.figsize':(50,50)})
-nx.draw_networkx_nodes(subG, pos, alpha=0.5,node_color=clustered_nodes_color, node_size=1,cmap='viridis')
+# non_clusteredN = (node_cluster_color < 0) # bolean array with true for clustered nodes and false for the rest
+# print(str(sum(non_clusteredN))+' nodes NOT clustered of '+str(clusteredN.shape[0])+' in total')
 
-plt.margins(0,0)
-plt.gca().xaxis.set_major_locator(plt.NullLocator())
-plt.gca().yaxis.set_major_locator(plt.NullLocator())
+# clustered_nodes = np.asarray(list(G.nodes))[clusteredN] 
+# clustered_nodes_color = node_cluster_color[clusteredN] 
+# subG = G.subgraph(clustered_nodes)
 
-plt.axis('off')
-outfile = os.path.join(dirname, basename)+'.node-clustering.png'
-plt.savefig(outfile, dpi=100) # save as png
-# plt.savefig(outfile, dpi=100,bbox_inches = 'tight', pad_inches = 0.5) # save as png
-plt.close()
+# sns.set(style='white', rc={'figure.figsize':(50,50)})
+# nx.draw_networkx_nodes(subG, pos, alpha=0.5,node_color=clustered_nodes_color, node_size=1,cmap='viridis')
 
-####################################################################################################
-# Color nodes not clustered before
-###################################################################################################
-print('Determine the connected components of the non clustered nodes')
+# plt.margins(0,0)
+# plt.gca().xaxis.set_major_locator(plt.NullLocator())
+# plt.gca().yaxis.set_major_locator(plt.NullLocator())
 
-non_clustered_nodes = np.asarray(list(G.nodes))[non_clusteredN] # the nodes that are not clustered
-subGnot = G.subgraph(non_clustered_nodes)                       # their subgraph
-graphs = [g for g in list(nx.connected_component_subgraphs(subGnot)) if g.number_of_nodes()>=20] # the connected components of the non clustered nodes
+# plt.axis('off')
+# outfile = os.path.join(dirname, basename)+'.node-clustering.png'
+# plt.savefig(outfile, dpi=100) # save as png
+# # plt.savefig(outfile, dpi=100,bbox_inches = 'tight', pad_inches = 0.5) # save as png
+# plt.close()
 
-print('Determine covariance matrix of the non clustered connected components')
-covdata, graph2covd = covd_multifeature(features,G,graphs) 
-logvec = [linalg.logm(m).reshape((1,covdata[0].shape[0]*covdata[0].shape[1])) for m in covdata] #calculate the logm and vectorize
-X_nonclustered = np.vstack(logvec) #create the array of vectorized covd data
+# ####################################################################################################
+# # Color nodes not clustered before
+# ###################################################################################################
+# print('Determine the connected components of the non clustered nodes')
 
-print('Cluster the new descriptors by finding the min distance to the clustered descriptors')
-from scipy import spatial
-reference = X[clusteredD,:]     # the clustered descriptors
-tree = spatial.KDTree(reference) 
-for row_ind in range(X_nonclustered.shape[0]):
-    index = tree.query(X_nonclustered[row_ind,:])[1] # find the clustered descriptor closer to the new descriptor
-    for nodes in graph2covd:    # for each new descriptor
-        node_cluster_color[nodes] = labels[index] # color its nodes with the color of the closer descriptor; nodes could belong to different descriptors and change color
+# non_clustered_nodes = np.asarray(list(G.nodes))[non_clusteredN] # the nodes that are not clustered
+# subGnot = G.subgraph(non_clustered_nodes)                       # their subgraph
+# graphs = [g for g in list(nx.connected_component_subgraphs(subGnot)) if g.number_of_nodes()>=20] # the connected components of the non clustered nodes
 
-sns.set(style='white', rc={'figure.figsize':(50,50)})
-nx.draw_networkx_nodes(G, pos, alpha=0.5,node_color=node_cluster_color, node_size=1,cmap='viridis')
+# print('Determine covariance matrix of the non clustered connected components')
+# covdata, graph2covd = covd_multifeature(features,G,graphs) 
+# logvec = [linalg.logm(m).reshape((1,covdata[0].shape[0]*covdata[0].shape[1])) for m in covdata] #calculate the logm and vectorize
+# X_nonclustered = np.vstack(logvec) #create the array of vectorized covd data
 
-plt.margins(0,0)
-plt.gca().xaxis.set_major_locator(plt.NullLocator())
-plt.gca().yaxis.set_major_locator(plt.NullLocator())
+# print('Cluster the new descriptors by finding the min distance to the clustered descriptors')
+# from scipy import spatial
+# reference = X[clusteredD,:]     # the clustered descriptors
+# tree = spatial.KDTree(reference) 
+# for row_ind in range(X_nonclustered.shape[0]):
+#     index = tree.query(X_nonclustered[row_ind,:])[1] # find the clustered descriptor closer to the new descriptor
+#     for nodes in graph2covd:    # for each new descriptor
+#         node_cluster_color[nodes] = labels[index] # color its nodes with the color of the closer descriptor; nodes could belong to different descriptors and change color
 
-plt.axis('off')
-outfile = os.path.join(dirname, basename)+'.all-node-clustering.png'
-plt.savefig(outfile, dpi=100) # save as png
-# plt.savefig(outfile, dpi=100,bbox_inches = 'tight', pad_inches = 0.5) # save as png
-plt.close()
+# sns.set(style='white', rc={'figure.figsize':(50,50)})
+# nx.draw_networkx_nodes(G, pos, alpha=0.5,node_color=node_cluster_color, node_size=1,cmap='viridis')
+
+# plt.margins(0,0)
+# plt.gca().xaxis.set_major_locator(plt.NullLocator())
+# plt.gca().yaxis.set_major_locator(plt.NullLocator())
+
+# plt.axis('off')
+# outfile = os.path.join(dirname, basename)+'.all-node-clustering.png'
+# plt.savefig(outfile, dpi=100) # save as png
+# # plt.savefig(outfile, dpi=100,bbox_inches = 'tight', pad_inches = 0.5) # save as png
+# plt.close()
 
