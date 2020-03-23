@@ -60,7 +60,7 @@ pos2norm = np.linalg.norm(pos,axis=1).reshape((pos.shape[0],1)) # the modulus of
 # Select the morphological features,
 # and set the min number of nodes per subgraph
 ###################################################################################################
-
+print('Prepare the morphology array')
 # Features list =  Nucleus:_Area   Nucleus:_Perimeter      Nucleus:_Circularity    Nucleus:_Eccentricity   Nucleus:_Hematoxylin_OD_mean    Nucleus:_Hematoxylin_OD_sum
 from sklearn.preprocessing import normalize 
 morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(7,8,9,12,13,14)).reshape((A.shape[0],6))
@@ -115,7 +115,10 @@ else:
         communities.append(coms.communities)
     np.save(outfile, communities)
 
-communities = [sg for g in communities for sg in g if len(sg) > threshold] # flatten list of communities
+bigcommunities = [sg for g in communities for sg in g if len(sg) > threshold] # flatten list of communities
+outfile = os.path.join(dirname, basename)+'.bigcommunities'
+np.save(outfile, bigcommunities)
+print('There are '+str(len(bigcommunities))+' big communities and '+str(len([sg for g in communities for sg in g]))+' communities in total')
 
 ####################################################################################################
 # Generate the covariance descriptors
@@ -130,7 +133,7 @@ if os.path.exists(outfile_covd):
     covdata = np.load(outfile_covd,allow_pickle=True)
 else:
     print('... creating the descriptors ...')
-    covdata = community_covd(features,G,communities) # get list of cov matrices and a list of nodes per matrix
+    covdata = community_covd(features,G,bigcommunities) # get list of cov matrices and a list of nodes per matrix
     np.save(outfile_covd,covdata)
 
 print('There are '+str(len(covdata))+' covariance descriptors ')
@@ -157,7 +160,7 @@ else:
     logvec = [linalg.logm(m).reshape((1,covdata[0].shape[0]*covdata[0].shape[1]))  for m in covdata] #calculate the logm and vectorize
     X = np.vstack(logvec) #create the array of vectorized covd data
     np.save(outfile_logvec,X)
-    
+print('The vectorized covd array has shape '+str(X.shape))    
 outfile_clusterable_embedding = os.path.join(dirname, basename)+'.clusterable_embedding.npy'
 if os.path.exists(outfile_clusterable_embedding):
     print('...load the clusterable embedding...')
@@ -166,7 +169,7 @@ else:
     print('...create the clusterable embedding...')
     clusterable_embedding = umap.UMAP(min_dist=0.0,n_components=3,random_state=42).fit_transform(X) # this is used to identify clusters
     np.save(outfile_clusterable_embedding,clusterable_embedding)
-
+print('The embedding has shape '+str(clusterable_embedding.shape))
 # # print('...cluster the descriptors...')
 # # labels = hdbscan.HDBSCAN(min_samples=50,min_cluster_size=100).fit_predict(clusterable_embedding)
 # labels = OPTICS(min_samples=50, xi=.01, min_cluster_size=.05).fit_predict(clusterable_embedding) # cluster label vector of covmatrices
