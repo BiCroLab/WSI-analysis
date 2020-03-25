@@ -137,7 +137,20 @@ def community_covd(features,G,subgraphs):
     delta_features = L.dot(features)
     data = np.hstack((features,delta_features)) #it has 16 features
 
-    covdata = [] # will contain a list for each quantile
+    covdata = [] # will contain a list for each community
+    
+    for g in subgraphs:
+        nodes = [int(n) for n in g]
+        dataset = data[nodes]
+        covmat = np.cov(dataset,rowvar=False)
+        covdata.append(covmat)
+        
+    return covdata
+
+def community_covd_woLaplacian(features,G,subgraphs):
+    data = features
+
+    covdata = [] # will contain a list for each community
     
     for g in subgraphs:
         nodes = [int(n) for n in g]
