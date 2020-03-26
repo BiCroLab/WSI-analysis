@@ -14,13 +14,11 @@ import matplotlib.pyplot as plt
 
 filename = sys.argv[1] # name of the morphology mesearements from qupath
 radius = int(sys.argv[2])   # for smoothing
+rndsample = int(sys.argv[3])    # for community detection stochasticity
 
 basename_graph = os.path.splitext(os.path.basename(filename))[0]
-basename_smooth = os.path.splitext(os.path.splitext(os.path.basename(filename))[0])[0]+'.r'+str(radius)
 if os.path.splitext(os.path.basename(filename))[1] == '.gz':
-    basename = os.path.splitext(os.path.splitext(os.path.basename(filename))[0])[0]+'.r'+str(radius)
-elif os.path.splitext(os.path.basename(filename))[1] == '.txt':
-    basename = os.path.splitext(os.path.basename(filename))[0]
+    basename = os.path.splitext(os.path.splitext(os.path.basename(filename))[0])[0]+'.r'+str(radius)+'.s'+str(rndsample)
 dirname = os.path.dirname(filename)
 
 ####################################################################################################
@@ -53,7 +51,7 @@ else:
     np.savetxt(outfile, cc)
     nx.write_gpickle(G, os.path.join(dirname, basename_graph) + ".graph.pickle")
 
-pos2norm = np.linalg.norm(pos,axis=1).reshape((pos.shape[0],1)) # the modulus of the position vector
+pos2norm = np.linalg.norm(pos,axis=1).reshape((pos.shape[0],1)) # the modulus of the position vector to preserve translational invariance
 
 print('Topological graph ready!')
 print('The graph has '+str(A.shape[0])+' nodes')
@@ -75,7 +73,7 @@ print('Smooth the morphology')
 
 outfile = os.path.join(dirname, basename)+'.smooth'
 if os.path.exists(outfile+'.npy'):
-    morphology_smooth = np.load(outfile+'.npy')
+    morphology_smooth = np.load(outfile+'.npy', allow_pickle=True)
 else:
     morphology_smooth = smoothing(A, morphology, radius)
     np.save(outfile, morphology_smooth)
@@ -84,43 +82,56 @@ else:
 # Reweight the graph
 ###################################################################################################
 print('Rescale graph weights by local morphology')
-ww = []
-morphology = normalize(morphology, norm='l1', axis=0) # normalize features
-morphology_smooth = normalize(morphology_smooth, norm='l1', axis=0) # normalize features
+
+print('...use the smooth morphology...')
+# morphology_normed = normalize(morphology, norm='l1', axis=0) # normalize features
+morphology_normed = normalize(morphology_smooth, norm='l1', axis=0) # normalize features
 GG = copy.deepcopy(G)
 for ijw in G.edges(data='weight'):
-    # !!!identical morphologies are discarded at the moment!!!
-    feature = np.asarray([ abs(morphology[ijw[0],f]-morphology[ijw[1],f]) for f in range(morphology.shape[1]) ]) # array of morphology features 
-
-    GG[ijw[0]][ijw[1]]['weight'] = ijw[2]/np.sum(feature) # the new graph weights
+    feature = np.asarray([ abs(morphology_normed[ijw[0],f]-morphology_normed[ijw[1],f]) for f in range(morphology_normed.shape[1]) ]) # array of morphology features 
+    GG[ijw[0]][ijw[1]]['weight'] = ijw[2]/np.sum(feature) # the new graph weights is the ratio between the current and the sum of the neightbours differences
 
 ####################################################################################################
 # Community detection
 ###################################################################################################
-print('Find the communities')
+print('Find the communities in GG')
+
 from cdlib import algorithms
+from cdlib import evaluation
+from cdlib.utils import convert_graph_formats
 import igraph
+import leidenalg
+from networkx.algorithms.community.quality import modularity
 
-CC = list(nx.connected_component_subgraphs(GG))
+print('...convert networkx graph to igraph object...')
+g = igraph.Graph(directed=False)
+g.add_vertices(list(GG.nodes()))
+g.add_edges(list(GG.edges()))
+edgelist = nx.to_pandas_edgelist(GG)
+for attr in edgelist.columns[2:]:
+    g.es[attr] = edgelist[attr]
 
-outfile = os.path.join(dirname, basename)+'.communities'
-if os.path.exists(outfile+'.npy'):
-    communities = np.load(outfile+'.npy',allow_pickle=True)
+print('...finding the partitions...')
+outfile_communities = os.path.join(dirname, basename)+'.communities.npy'
+if os.path.exists(outfile_communities):
+    communities = np.load(outfile_communities,allow_pickle=True)
 else:
-    communities = []
-    for graph in CC:
-        file_edgelist = str(outfile)+'.edge_list.csv'
-        nx.write_edgelist(graph,file_edgelist,data=['weight']) # writhe the edge list 
-        g = igraph.Graph.Read_Ncol(file_edgelist, directed = False, weights = True)
-        weights = g.es['weight']
-        coms = algorithms.leiden(g,weights='weight')
-        communities.append(coms.communities)
-    np.save(outfile, communities)
+    part = leidenalg.find_partition(g, leidenalg.ModularityVertexPartition,initial_membership=None, weights='weight', seed=rndsample, n_iterations=2)
+    communities = [g.vs[x]['name'] for x in part]
+    np.save(outfile_communities, communities)
 
-bigcommunities = [sg for g in communities for sg in g if len(sg) > threshold] # flatten list of communities
+partition = [set(map(int, set(sg))) for sg in communities] # make a list of set of partitions
+mod_GG = modularity(GG, partition, weight='weight')
+mod_G = modularity(G, partition, weight='weight')
+
+print('The modularity of GG is '+str(mod_GG))
+print('The modularity of G is '+str(mod_G))
+    
+bigcommunities = [g for g in communities if len(g) > threshold] # list of big enough communities
 outfile = os.path.join(dirname, basename)+'.bigcommunities'
 np.save(outfile, bigcommunities)
-print('There are '+str(len(bigcommunities))+' big communities and '+str(len([sg for g in communities for sg in g]))+' communities in total')
+
+print('There are '+str(len(bigcommunities))+' big communities and '+str(len(communities))+' communities in total')
 
 ####################################################################################################
 # Generate the covariance descriptors
@@ -171,7 +182,49 @@ else:
     print('...create the clusterable embedding...')
     clusterable_embedding = umap.UMAP(min_dist=0.0,n_components=3,random_state=42).fit_transform(X) # this is used to identify clusters
     np.save(outfile_clusterable_embedding,clusterable_embedding)
+
 print('The embedding has shape '+str(clusterable_embedding.shape))
+
+####################################################################################################
+# Free up spaces
+###################################################################################################
+del G                           # G is not needed anymore
+del A                           # A is not needed anymore
+del morphology
+del morphology_smooth
+
+####################################################################################################
+# Color graph nodes by community label
+###################################################################################################
+print('Preparing to color the graph communities')
+print('...set up the empty graph...')
+g = nx.Graph()
+g.add_nodes_from(range(pos.shape[0])) # add all the nodes of the graph, but not all of them are in a covd cluster because of small communities
+print('...set up the empty dictionary...')
+dictionary = {}
+for node in range(pos.shape[0]):
+    dictionary[int(node)] = -1 # set all node to -1
+
+print('...set up the full dictionary...')
+node_comm_tuples = [(int(node),i) for i, community in enumerate(bigcommunities) for node in community]
+dictionary.update(dict(node_comm_tuples))
+
+node_color = []
+for i in sorted (dictionary) :  # determine the color based on the community
+    node_color.append(dictionary[i])
+
+print('...draw the graph...')
+sns.set(style='white', rc={'figure.figsize':(50,50)})
+nx.draw_networkx_nodes(g, pos, alpha=0.5,node_color=node_color, node_size=1,cmap=plt.cm.Set1)
+
+print('...saving graph...')
+plt.axis('off')
+plt.savefig(os.path.join(dirname, basename)+'.community_graph.png') # save as png
+plt.close()
+
+###################################################################################################
+###################################################################################################
+
 # # print('...cluster the descriptors...')
 # # labels = hdbscan.HDBSCAN(min_samples=50,min_cluster_size=100).fit_predict(clusterable_embedding)
 # labels = OPTICS(min_samples=50, xi=.01, min_cluster_size=.05).fit_predict(clusterable_embedding) # cluster label vector of covmatrices
