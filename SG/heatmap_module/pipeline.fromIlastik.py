@@ -84,8 +84,8 @@ else:
 print('Rescale graph weights by local morphology')
 
 print('...use the smooth morphology...')
-# morphology_normed = normalize(morphology, norm='l1', axis=0) # normalize features
-morphology_normed = normalize(morphology_smooth, norm='l1', axis=0) # normalize features
+morphology_normed = normalize(morphology, norm='l1', axis=0) # normalize features
+# morphology_normed = normalize(morphology_smooth, norm='l1', axis=0) # normalize features
 GG = copy.deepcopy(G)
 for ijw in G.edges(data='weight'):
     feature = np.asarray([ abs(morphology_normed[ijw[0],f]-morphology_normed[ijw[1],f]) for f in range(morphology_normed.shape[1]) ]) # array of morphology features 
