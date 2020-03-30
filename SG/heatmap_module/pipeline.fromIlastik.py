@@ -119,14 +119,14 @@ print('Generate the covariance descriptor')
 # features = np.hstack((pos2norm,morphology))            # this is rotational invariant
 features = morphology            # this is rotational invariant
 
-Outfile_covd = os.path.join(dirname, basename)+'.covd.npy'
+outfile_covd = os.path.join(dirname, basename)+'.covd.npy'
 if os.path.exists(outfile_covd):
     print('... loading the descriptors ...')
     covdata = np.load(outfile_covd,allow_pickle=True)
 else:
     print('... creating the descriptors ...')
     # !!! you can use G or GG here  !!!
-    covdata = community_covd(features,GG,bigcommunities) # get list of cov matrices and a list of nodes per matrix
+    covdata = community_covd(features,G,bigcommunities) # get list of cov matrices and a list of nodes per matrix
     np.save(outfile_covd,covdata)
 
 print('There are '+str(len(covdata))+' covariance descriptors ')
