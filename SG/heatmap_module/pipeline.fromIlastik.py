@@ -63,7 +63,8 @@ print('The graph has '+str(A.shape[0])+' nodes')
 print('Prepare the morphology array')
 # Features list = fov_name  x_centroid      y_centroid      area    perimeter       eccentricity    circularity   mean_intensity  total_intensity
 from sklearn.preprocessing import normalize 
-morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(3,4,5,6,7,8)).reshape((A.shape[0],6))
+# morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(3,4,5,6,7,8)).reshape((A.shape[0],6))
+morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(3,5,6,8)).reshape((A.shape[0],4))
 threshold = max(radius,(morphology.shape[1]+4)*2) # set the min subgraph size based on the dim of the feature matrix
 
 ####################################################################################################
@@ -162,38 +163,38 @@ else:
 
 print('The embedding has shape '+str(clusterable_embedding.shape))
 
-####################################################################################################
-# Free up spaces
-###################################################################################################
-del G                           # G is not needed anymore
-del A                           # A is not needed anymore
-del morphology
+# ####################################################################################################
+# # Free up spaces
+# ###################################################################################################
+# del G                           # G is not needed anymore
+# del A                           # A is not needed anymore
+# del morphology
 
-####################################################################################################
-# Color graph nodes by community label
-###################################################################################################
-print('Preparing to color the graph communities')
-print('...set up the empty graph...')
-g = nx.Graph()
-g.add_nodes_from(range(pos.shape[0])) # add all the nodes of the graph, but not all of them are in a covd cluster because of small communities
-print('...set up the empty dictionary...')
-dictionary = {}
-for node in range(pos.shape[0]):
-    dictionary[int(node)] = -1 # set all node to -1
+# ####################################################################################################
+# # Color graph nodes by community label
+# ###################################################################################################
+# print('Preparing to color the graph communities')
+# print('...set up the empty graph...')
+# g = nx.Graph()
+# g.add_nodes_from(range(pos.shape[0])) # add all the nodes of the graph, but not all of them are in a covd cluster because of small communities
+# print('...set up the empty dictionary...')
+# dictionary = {}
+# for node in range(pos.shape[0]):
+#     dictionary[int(node)] = -1 # set all node to -1
 
-print('...set up the full dictionary...')
-node_comm_tuples = [(int(node),i) for i, community in enumerate(bigcommunities) for node in community]
-dictionary.update(dict(node_comm_tuples))
+# print('...set up the full dictionary...')
+# node_comm_tuples = [(int(node),i) for i, community in enumerate(bigcommunities) for node in community]
+# dictionary.update(dict(node_comm_tuples))
 
-node_color = []
-for i in sorted (dictionary) :  # determine the color based on the community
-    node_color.append(dictionary[i])
+# node_color = []
+# for i in sorted (dictionary) :  # determine the color based on the community
+#     node_color.append(dictionary[i])
 
-print('...draw the graph...')
-sns.set(style='white', rc={'figure.figsize':(50,50)})
-nx.draw_networkx_nodes(g, pos, alpha=0.5,node_color=node_color, node_size=1,cmap=plt.cm.Set1)
+# print('...draw the graph...')
+# sns.set(style='white', rc={'figure.figsize':(50,50)})
+# nx.draw_networkx_nodes(g, pos, alpha=0.5,node_color=node_color, node_size=1,cmap=plt.cm.Set1)
 
-print('...saving graph...')
-plt.axis('off')
-plt.savefig(os.path.join(dirname, basename)+'.community_graph.png') # save as png
-plt.close()
+# print('...saving graph...')
+# plt.axis('off')
+# plt.savefig(os.path.join(dirname, basename)+'.community_graph.png') # save as png
+# plt.close()
