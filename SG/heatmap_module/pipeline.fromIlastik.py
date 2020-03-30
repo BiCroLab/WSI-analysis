@@ -150,7 +150,7 @@ if os.path.exists(outfile_logvec):
     X = np.load(outfile_logvec,allow_pickle=True)
 else:
     print('...create the logvec dataset...')
-    logvec = [linalg.logm(m).reshape((1,covdata[0].shape[0]*covdata[0].shape[1]))  for m in covdata] #calculate the logm and vectorize
+    logvec = [ linalg.logm(m).reshape((1,covdata[0].shape[0]*covdata[0].shape[1]))  for m in covdata] #calculate the logm and vectorize
     X = np.vstack(logvec) #create the array of vectorized covd data
     np.save(outfile_logvec,X)
 print('The vectorized covd array has shape '+str(X.shape))    

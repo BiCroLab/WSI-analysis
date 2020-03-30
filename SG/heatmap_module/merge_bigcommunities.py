@@ -65,7 +65,7 @@ for ijw in G.edges(data='weight'):
 ####################################################################################################
 # Community detection
 ###################################################################################################
-print('Find the communities in GG')
+print('Find the communities in G')
 
 from cdlib import algorithms
 from cdlib import evaluation
@@ -117,7 +117,8 @@ outfile_clusterable_embedding = os.path.join(dirname, basename)+'.clusterable_em
 
 print('...create the clusterable embedding...')
 clusterable_embedding = umap.UMAP(min_dist=0.0,n_components=3,random_state=42).fit_transform(X) # this is used to identify clusters
-np.save(outfile_clusterable_embedding,clusterable_embedding)
+
+np.save( outfile_clusterable_embedding,clusterable_embedding )
 
 print('The embedding has shape '+str(clusterable_embedding.shape))
 
