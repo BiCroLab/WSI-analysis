@@ -12,6 +12,7 @@ from sklearn.decomposition import PCA
 warnings.filterwarnings('ignore')
 from sklearn.preprocessing import normalize
 import numba
+import igraph
 
 def space2graph(positions,nn):
     XY = positions#np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(5,6))
@@ -186,3 +187,12 @@ def cluster_morphology(morphology,graph2covd,labels):
             nodes = [item for sublist in nodes_in_cluster for item in sublist]
             cluster_mean[cluster,:] = np.mean(morphology[nodes,:],axis=0)
     return cluster_mean
+
+def networkx2igraph(graph,nodes,edges):     # given a networkx graph creates an igraph object
+    g = igraph.Graph(directed=False)
+    g.add_vertices(nodes)
+    g.add_edges(edges)
+    edgelist = nx.to_pandas_edgelist(graph)
+    for attr in edgelist.columns[2:]:
+        g.es[attr] = edgelist[attr]
+    return g

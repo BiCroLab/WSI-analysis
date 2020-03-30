@@ -66,30 +66,29 @@ from sklearn.preprocessing import normalize
 morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(7,8,9,12,13,14)).reshape((A.shape[0],6))
 threshold = max(radius,(morphology.shape[1]+4)*2) # set the min subgraph size based on the dim of the feature matrix
 
-####################################################################################################
-# Smooth the morphology
-###################################################################################################
-print('Smooth the morphology')
+# ####################################################################################################
+# # Smooth the morphology
+# ###################################################################################################
+# print('Smooth the morphology')
 
-outfile = os.path.join(dirname, basename)+'.smooth'
-if os.path.exists(outfile+'.npy'):
-    morphology_smooth = np.load(outfile+'.npy', allow_pickle=True)
-else:
-    morphology_smooth = smoothing(A, morphology, radius)
-    np.save(outfile, morphology_smooth)
+# outfile = os.path.join(dirname, basename)+'.smooth'
+# if os.path.exists(outfile+'.npy'):
+#     morphology_smooth = np.load(outfile+'.npy', allow_pickle=True)
+# else:
+#     morphology_smooth = smoothing(A, morphology, radius)
+#     np.save(outfile, morphology_smooth)
 
 ####################################################################################################
 # Reweight the graph
 ###################################################################################################
 print('Rescale graph weights by local morphology')
 
-print('...use the smooth morphology...')
+print('...use the raw morphology...')
 morphology_normed = normalize(morphology, norm='l1', axis=0) # normalize features
-# morphology_normed = normalize(morphology_smooth, norm='l1', axis=0) # normalize features
 GG = copy.deepcopy(G)
 for ijw in G.edges(data='weight'):
-    feature = np.asarray([ abs(morphology_normed[ijw[0],f]-morphology_normed[ijw[1],f]) for f in range(morphology_normed.shape[1]) ]) # array of morphology features 
-    GG[ijw[0]][ijw[1]]['weight'] = ijw[2]/np.sum(feature) # the new graph weights is the ratio between the current and the sum of the neightbours differences
+    feature = np.asarray([ abs(morphology_normed[ijw[0],f]-morphology_normed[ijw[1],f]) for f in range(morphology_normed.shape[1]) ]) # array of morphology features
+    GG[ijw[0]][ijw[1]]['weight'] = ijw[2]/(1.0+np.sum(feature)) # the new graph weights is the ratio between the current and the sum of the neightbours differences
 
 ####################################################################################################
 # Community detection
@@ -103,30 +102,19 @@ import igraph
 import leidenalg
 from networkx.algorithms.community.quality import modularity
 
+print('...generate connected components as subgraphs...')
+graphs = list(nx.connected_component_subgraphs(GG))
+
 print('...convert networkx graph to igraph object...')
-g = igraph.Graph(directed=False)
-g.add_vertices(list(GG.nodes()))
-g.add_edges(list(GG.edges()))
-edgelist = nx.to_pandas_edgelist(GG)
-for attr in edgelist.columns[2:]:
-    g.es[attr] = edgelist[attr]
-
-print('...finding the partitions...')
-outfile_communities = os.path.join(dirname, basename)+'.communities.npy'
-if os.path.exists(outfile_communities):
-    communities = np.load(outfile_communities,allow_pickle=True)
-else:
+communities = []
+for graph in graphs:
+    nx.write_weighted_edgelist(graph, basename+".edgelist.txt")
+    g = igraph.Graph.Read_Ncol(basename+".edgelist.txt", names=True, weights="if_present", directed=False)
+    os.remove(basename+".edgelist.txt")
     part = leidenalg.find_partition(g, leidenalg.ModularityVertexPartition,initial_membership=None, weights='weight', seed=rndsample, n_iterations=2)
-    communities = [g.vs[x]['name'] for x in part]
-    np.save(outfile_communities, communities)
+    communities.extend([g.vs[x]['name'] for x in part])
+    print( 'The number of communities is '+str(len(communities)) )
 
-partition = [set(map(int, set(sg))) for sg in communities] # make a list of set of partitions
-mod_GG = modularity(GG, partition, weight='weight')
-mod_G = modularity(G, partition, weight='weight')
-
-print('The modularity of GG is '+str(mod_GG))
-print('The modularity of G is '+str(mod_G))
-    
 bigcommunities = [g for g in communities if len(g) > threshold] # list of big enough communities
 outfile = os.path.join(dirname, basename)+'.bigcommunities'
 np.save(outfile, bigcommunities)
@@ -191,7 +179,6 @@ print('The embedding has shape '+str(clusterable_embedding.shape))
 del G                           # G is not needed anymore
 del A                           # A is not needed anymore
 del morphology
-del morphology_smooth
 
 ####################################################################################################
 # Color graph nodes by community label
