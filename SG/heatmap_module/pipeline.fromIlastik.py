@@ -115,9 +115,11 @@ print('There are '+str(len(bigcommunities))+' big communities and '+str(len(comm
 # this can be done with respect to raw features or smoothed ones
 ###################################################################################################
 print('Generate the covariance descriptor')
-features = np.hstack((pos2norm,morphology))            # this is rotational invariant
+#!!! Should positions be included?  !!!
+# features = np.hstack((pos2norm,morphology))            # this is rotational invariant
+features = morphology            # this is rotational invariant
 
-outfile_covd = os.path.join(dirname, basename)+'.covd.npy'
+Outfile_covd = os.path.join(dirname, basename)+'.covd.npy'
 if os.path.exists(outfile_covd):
     print('... loading the descriptors ...')
     covdata = np.load(outfile_covd,allow_pickle=True)
