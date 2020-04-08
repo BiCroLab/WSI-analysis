@@ -25,10 +25,12 @@ dirname = sys.argv[1]           # the directory containing the logvec files
 import glob
 
 ids = [ logvec_name.split('.')[0] for logvec_name in glob.glob(dirname+r'/*.logvec.npy') ]
+label_set = [ int(logvec_name.split('/')[-1]) for logvec_name in set(ids) ]
 
 logvec_list = []
-dim_list = []                   # contains the size of each sample in the global logvec
-
+dim_list = [] # contains the size of each sample in the global logvec
+print('The label set is:')
+print(label_set)
 for id_name in set(ids):
     dim_id = 0
     for logvec_name in glob.glob(id_name+r'*.logvec.npy'):
@@ -37,12 +39,12 @@ for id_name in set(ids):
         logvec_list.append(logvec)
     dim_list.append(dim_id)     
 
-label = 0
+label_idx = 0
 labels = np.zeros((0,1))
 for dim in dim_list:
-    array = label*np.ones((dim,1))
+    array = label_set[label_idx]*np.ones((dim,1))
     labels = np.vstack((labels,array))
-    label += 1
+    label_idx += 1
 ####################################################################################################
 # Cluster the covariance descriptors
 ###################################################################################################

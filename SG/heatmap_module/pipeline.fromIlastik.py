@@ -61,10 +61,12 @@ print('The graph has '+str(A.shape[0])+' nodes')
 # and set the min number of nodes per subgraph
 ###################################################################################################
 print('Prepare the morphology array')
+# !!! Decide which features to include !!!
 # Features list = fov_name  x_centroid      y_centroid      area    perimeter       eccentricity    circularity   mean_intensity  total_intensity
 from sklearn.preprocessing import normalize 
 # morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(3,4,5,6,7,8)).reshape((A.shape[0],6))
 morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(3,5,6,8)).reshape((A.shape[0],4))
+# morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=(3,5,6)).reshape((A.shape[0],3))
 threshold = max(radius,(morphology.shape[1]+4)*2) # set the min subgraph size based on the dim of the feature matrix
 
 ####################################################################################################
@@ -116,8 +118,8 @@ print('There are '+str(len(bigcommunities))+' big communities and '+str(len(comm
 ###################################################################################################
 print('Generate the covariance descriptor')
 #!!! Should positions be included?  !!!
-# features = np.hstack((pos2norm,morphology))            # this is rotational invariant
-features = morphology            # this is rotational invariant
+features = np.hstack((pos2norm,morphology))            # this is rotational invariant
+# features = morphology            # this is without positions
 
 outfile_covd = os.path.join(dirname, basename)+'.covd.npy'
 if os.path.exists(outfile_covd):
