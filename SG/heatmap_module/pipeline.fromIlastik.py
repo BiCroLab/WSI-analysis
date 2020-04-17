@@ -27,12 +27,13 @@ import matplotlib.pyplot as plt
 try:
     opts, args = getopt.getopt(sys.argv[1:], "i:s:n:a:p:e:c:m:t:",
                                ["input","seed=","nn=","area=","perimeter=",
-                                "eccentricity=","circularity=","meanIntensity=","totalIntensity=","pos"])
+                                "eccentricity=","circularity=","meanIntensity=","totalIntensity=","pos="])
 except getopt.GetoptError as err:
     # print help information and exit:
     print(str(err))  # will print something like "option -a not recognized"
     usage()
     sys.exit(2)
+print(opts)
 usecols = ()
 for o, a in opts:
     if o in ("-i", "--input"):
