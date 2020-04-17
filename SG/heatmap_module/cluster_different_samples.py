@@ -45,6 +45,7 @@ for dim in dim_list:
     array = label_set[label_idx]*np.ones((dim,1))
     labels = np.vstack((labels,array))
     label_idx += 1
+
 ####################################################################################################
 # Cluster the covariance descriptors
 ###################################################################################################
