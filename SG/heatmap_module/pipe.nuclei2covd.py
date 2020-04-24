@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
-
 import numpy as np
 from skimage.measure import label, regionprops
 from scipy.sparse import csr_matrix,lil_matrix,coo_matrix
@@ -19,9 +16,6 @@ import h5py
 from matplotlib import pyplot as plt
 import warnings
 warnings.filterwarnings('ignore')
-
-
-# In[ ]:
 
 
 def covd(mat):
@@ -52,21 +46,15 @@ def covd(mat):
     return covd2vec
 
 
-# In[ ]:
-
-
 '''
 Set the input information
 '''
 h5_file = sys.argv[1]   #this file contains the segmented nuclei
 datadir = os.path.dirname(os.path.realpath(h5_file))
-dapi_file = sys.argv[2] #this file contains the tif images
-npz_file = sys.argv[3] #this is the output file with spatial and morphological descriptors
-method = sys.argv[4] #choose between covd rotational invariant or not: covdRI or covd 
-report = sys.argv[5] #filename of the output report
-
-
-# In[ ]:
+basename = os.path.splitext(h5_file)[0]
+dapi_file = basename+'.tif'
+npz_file = basename #this is the output file with spatial and morphological descriptors
+method = 'covd' #choose between covd rotational invariant or not: covdRI or covd 
 
 
 fov = h5py.File(h5_file, 'r') # load the current fov segmentation
@@ -100,15 +88,14 @@ for region in regionprops(mask_label,intensity_image=dapi_fov):
 
 #save covd to file
 from datetime import datetime
-# Returns a datetime object containing the local date and time
-dateTimeObj = datetime.now()
+dateTimeObj = datetime.now() # Returns a datetime object containing the local date and time
 
 if numb_of_nuclei > 0:
     np.savez(str(npz_file)+'_'+str(method)+'.npz',centroids=centroids,descriptors=descriptors)
 else:
     print('There are no nuclei in row='+str(row)+' and col='+str(col)+' in file: '+str(h5_file))
 
-with open(str(report), 'a+', newline='') as myfile:
+with open(basename+'.txt', 'a+', newline='') as myfile:
      wr = csv.writer(myfile)
      wr.writerow([dateTimeObj,'row='+str(row),'col='+str(col),'nuclei='+str(numb_of_nuclei),'#descriptors='+str(len(descriptors))])
      
