@@ -80,7 +80,6 @@ print('Clustering the morphology')
 import umap
 import hdbscan
 import sklearn.cluster as cluster
-from sklearn.cluster import OPTICS
 
 print('...the features tuple that we consider is: ',str(usecols))
 morphology = np.loadtxt(filename, delimiter="\t", skiprows=True, usecols=usecols)
@@ -88,10 +87,8 @@ print(morphology.shape)
 morphology_normed = normalize(morphology, norm='l1', axis=0) # normalize features
 print(morphology_normed.shape)
 
-
 print('...create the clusterable embedding...')
 outfile_clusterable_embedding = os.path.join(dirname, 'clusterable_embedding.morphology.npy')
-
 clusterable_embedding = umap.UMAP(min_dist=0.0,n_components=3,random_state=42).fit_transform(morphology_normed) # this is used to identify clusters
 
 np.save( outfile_clusterable_embedding, clusterable_embedding )
