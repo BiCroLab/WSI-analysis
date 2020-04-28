@@ -39,23 +39,20 @@ def covd(mat):
         Idd.append(np.linalg.norm([Ixx,Iyy]))
     descriptor = np.array( list(zip(list(x),list(y),list(I),Ix,Iy,Ixx,Iyy,Id,Idd)),dtype='int64' ).T     # descriptors
     C = np.cov(descriptor) #covariance of the descriptor
-
     iu1 = np.triu_indices(C.shape[1]) # the indices of the upper triangular part
     covd2vec = C[iu1]
-
     return covd2vec
-
 
 '''
 Set the input information
 '''
 h5_file = sys.argv[1]   #this file contains the segmented nuclei
+
 datadir = os.path.dirname(os.path.realpath(h5_file))
 basename = os.path.splitext(h5_file)[0]
-dapi_file = basename+'.tif'
+dapi_file = basename+'.tif' # the dapi file has to be located in the same directory as the h5 file
 npz_file = basename #this is the output file with spatial and morphological descriptors
 method = 'covd' #choose between covd rotational invariant or not: covdRI or covd 
-
 
 fov = h5py.File(h5_file, 'r') # load the current fov segmentation
 mask = fov['/exported_watershed_masks'][:]
@@ -71,27 +68,31 @@ mask_label, numb_of_nuclei = label(mask_reduced,return_num=True)
 
 centroids = []    #list of centroid coordinates for sc in each fov
 descriptors = []  #list of descriptors for sc in each fov
+morphology = [] #list of morphology features for sc in each fov
 counter=0
 print('r:',row,'c:',col,'nuclei:',numb_of_nuclei)
-
 for region in regionprops(mask_label,intensity_image=dapi_fov):
     counter+=1
-    if ((np.count_nonzero(region.intensity_image) <= 10) or (np.count_nonzero(region.intensity_image) > 2500)) :        #at least 1 cell
+    if ((np.count_nonzero(region.intensity_image) <= 10) or (np.count_nonzero(region.intensity_image) > 2500)) :        
         print('The number of pixels is '+str(np.count_nonzero(region.intensity_image))+' in region='+str(counter))
     else:
-#        print('The number of pixels is '+str(np.count_nonzero(region.intensity_image))+' in region='+str(counter))
-        centroids.append(region.centroid)
-        if method == 'covd':
-            descriptors.append(covd(region.intensity_image))
-        if method == 'covdRI':
-            descriptors.append(covd_ri(region.intensity_image))
+        x = 512*int(col)+region.centroid[0] # shift by FOV location
+        y = 512*int(row)+region.centroid[1] # shift by FOV location
+        centroids.append((x,y))
+
+        morphology.append((region.area,region.perimeter,region.solidity,region.eccentricity,region.mean_intensity))
+        
+        descriptors.append(covd(region.intensity_image))
 
 #save covd to file
 from datetime import datetime
 dateTimeObj = datetime.now() # Returns a datetime object containing the local date and time
 
 if numb_of_nuclei > 0:
-    np.savez(str(npz_file)+'_'+str(method)+'.npz',centroids=centroids,descriptors=descriptors)
+    np.savez(str(npz_file)+'_'+str(method)+'.npz',
+             centroids=centroids,
+             descriptors=descriptors,
+             morphology=morphology)
 else:
     print('There are no nuclei in row='+str(row)+' and col='+str(col)+' in file: '+str(h5_file))
 
