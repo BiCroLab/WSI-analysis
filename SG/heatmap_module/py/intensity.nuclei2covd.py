@@ -17,6 +17,7 @@ from matplotlib import pyplot as plt
 import warnings
 warnings.filterwarnings('ignore')
 
+from datetime import datetime
 
 def covd(mat):
     ims = coo_matrix(mat)
@@ -66,6 +67,7 @@ col = h5_file.split('_r',1)[1].split('_c')[1].split('.')[0]
 # label all connected components in the fov, 0 is background
 mask_label, numb_of_nuclei = label(mask_reduced,return_num=True) 
 
+fov = [] #list of fov locations
 centroids = []    #list of centroid coordinates for sc in each fov
 descriptors = []  #list of descriptors for sc in each fov
 morphology = [] #list of morphology features for sc in each fov
@@ -76,6 +78,8 @@ for region in regionprops(mask_label,intensity_image=dapi_fov):
     if ((np.count_nonzero(region.intensity_image) <= 10) or (np.count_nonzero(region.intensity_image) > 2500)) :        
         print('The number of pixels is '+str(np.count_nonzero(region.intensity_image))+' in region='+str(counter))
     else:
+        fov.append((int(row),int(col)))
+        
         x = 512*int(col)+region.centroid[0] # shift by FOV location
         y = 512*int(row)+region.centroid[1] # shift by FOV location
         centroids.append((x,y))
@@ -84,18 +88,19 @@ for region in regionprops(mask_label,intensity_image=dapi_fov):
         
         descriptors.append(covd(region.intensity_image))
 
-#save covd to file
-from datetime import datetime
 dateTimeObj = datetime.now() # Returns a datetime object containing the local date and time
 
+# Save information to file
 if numb_of_nuclei > 0:
     np.savez(str(npz_file)+'_'+str(method)+'.npz',
+             fov=fov,
              centroids=centroids,
              descriptors=descriptors,
              morphology=morphology)
 else:
     print('There are no nuclei in row='+str(row)+' and col='+str(col)+' in file: '+str(h5_file))
 
+# Update report 
 with open(basename+'.txt', 'a+', newline='') as myfile:
      wr = csv.writer(myfile)
      wr.writerow([dateTimeObj,'row='+str(row),'col='+str(col),'nuclei='+str(numb_of_nuclei),'#descriptors='+str(len(descriptors))])
