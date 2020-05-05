@@ -18,6 +18,7 @@ warnings.filterwarnings('ignore')
 
 dirname = sys.argv[1] # the directory where covd.npz files are located
 sample = sys.argv[2]  # the sample id
+
 counter = 0
 for f in glob.glob(dirname+'/*covd.npz'):
     counter += 1
@@ -34,13 +35,20 @@ for f in glob.glob(dirname+'/*covd.npz'):
         xy = np.vstack((xy, data['centroids']))
         morphology = np.vstack((morphology, data['morphology']))
 
-print('Clustering the descriptors')
-embedding = umap.UMAP(min_dist=0.0,n_components=3,random_state=42).fit_transform(covds) 
+# Clustering the intensity descriptors
+embedding_intensity = umap.UMAP(min_dist=0.0,n_components=3,random_state=42).fit_transform(covds) 
+embedding_morphology = umap.UMAP(min_dist=0.0,n_components=3,random_state=42).fit_transform(morphology) 
+
+# Create dataframes
 df_fov = pd.DataFrame(data=fov, columns=['fov_row','fov_col'])
 df_xy = pd.DataFrame(data=xy, columns=['cx','cy'])
-df_embedding = pd.DataFrame(data=embedding, columns=['x','y','z'])
+df_embedding_intensity = pd.DataFrame(data=embedding_intensity, columns=['xi','yi','zi'])
+df_embedding_morphology = pd.DataFrame(data=embedding_morphology, columns=['xm','ym','zm'])
 df_morphology = pd.DataFrame(data=morphology, columns=['area','perimeter','solidity','eccentricity','mean_intensity'])
-df = pd.concat([df_fov,df_xy, df_embedding, df_morphology],axis=1)
 
-df.to_pickle("id_"+str(sample)+".fov_centroids_embedding_morphology.covd.pkl") # save datafram
+# Concatenate all dataframes
+df = pd.concat([df_fov,df_xy, df_embedding_intensity, df_embedding_morphology, df_morphology],axis=1)
+
+# Save dataframe
+df.to_pickle("id_"+str(sample)+".fov_centroids_embedding_morphology.covd.pkl")
 
