@@ -24,7 +24,7 @@ def covd(mat):
     imd = np.pad( mat.astype(float), (1,1), 'constant') # path with zeros
 
     [x,y,I] = [ims.row,ims.col,ims.data]                # get position and intensity
-    pos = np.hstack((x,y))                              # define position vector
+    pos = np.asarray(list(zip(x,y)))                    # define position vector
     length = np.linalg.norm(pos,axis=1)                 # get the length of the position vectors
     
     Ix = [] #first derivative in x
