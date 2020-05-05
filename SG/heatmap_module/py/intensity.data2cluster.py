@@ -28,6 +28,9 @@ from sklearn.metrics import pairwise_distances_argmin_min
 import hdbscan
 from scipy.cluster.hierarchy import fcluster
 
+import plotly
+plotly.io.orca.config.executable = '/usr/local/share/anaconda3/bin/orca'
+
 #def cluster_nuclei(filename,sample_size,n_neighbors,threshold_q,min_cluster_size,min_samples):
 #def cluster_nuclei_intensity(filename,sample_size,n_neighbors,threshold_q,auto_open,plot_switch):
 #    df = pd.read_pickle(filename)
@@ -74,7 +77,7 @@ def cluster_nuclei_intensity(filename,df,n_neighbors,threshold_q,auto_open,plot_
                         width=800, height=800,
                         color_discrete_sequence=px.colors.qualitative.Set2)
         fig.update_traces(marker=dict(size=2,opacity=1.0))
-        fig.write_html(filename+'.spatial_projection.intensity.html', auto_open=auto_open)
+        #fig.write_html(filename+'.spatial_projection.intensity.html', auto_open=auto_open)
         fig.write_image(filename+'.spatial_projection.intensity.png')
 
         # plot the low curvature sector
@@ -83,17 +86,17 @@ def cluster_nuclei_intensity(filename,df,n_neighbors,threshold_q,auto_open,plot_
                             color="cluster_intensity", hover_name="cluster_intensity",
                             color_discrete_sequence=px.colors.qualitative.Set2)
         fig.update_traces(marker=dict(size=3,opacity=0.75),selector=dict(mode='markers'))
-        fig.write_html(filename+'.low_curvature_clusters.intensity.html', auto_open=auto_open)
+        #fig.write_html(filename+'.low_curvature_clusters.intensity.html', auto_open=auto_open)
         fig.write_image(filename+'.low_curvature_clusters.intensity.png')
     return df
 
-sample_size = 100000 # set to 0 if the entire sample is considered
+sample_size = 0 # set to 0 if the entire sample is considered
 n_neighbors = 100   # NNN in the curvature calculation
 threshold_q = 0.1   # the quantile defining the low-curvature sector
-auto_open = True    # switch to open or not html figures in new tab
+auto_open = False    # switch to open or not html figures in new tab
 plot_switch = True  # switch to generate or not html figures
 
-for filename in glob.glob(r'../pkl/id_52.*.pkl'):
+for filename in glob.glob(r'../id_52.*.pkl'):
     df = pd.read_pickle(filename)
     if sample_size > 0 and sample_size < df.shape[0]:
         df = df.sample(n=sample_size)
