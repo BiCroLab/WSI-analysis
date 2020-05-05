@@ -41,6 +41,6 @@ df_embedding = pd.DataFrame(data=embedding, columns=['x','y','z'])
 df_xy = pd.DataFrame(data=xy, columns=['cx','cy'])
 df_morphology = pd.DataFrame(data=morphology, columns=['area','perimeter','solidity','eccentricity','mean_intensity'])
 df = pd.concat([df_fov,df_xy, df_embedding, df_morphology],axis=1)
-print(df)
+
 df.to_pickle("id_"+str(sample)+".fov_centroids_embedding_morphology.covd.pkl") # save datafram
 
