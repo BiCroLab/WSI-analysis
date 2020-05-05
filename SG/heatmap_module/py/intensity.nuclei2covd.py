@@ -76,7 +76,7 @@ centroids = []    #list of centroid coordinates for sc in each fov
 descriptors = []  #list of descriptors for sc in each fov
 morphology = [] #list of morphology features for sc in each fov
 counter=0
-print('r:',row,'c:',col,'nuclei:',numb_of_nuclei)
+#print('r:',row,'c:',col,'nuclei:',numb_of_nuclei)
 for region in regionprops(mask_label,intensity_image=dapi_fov):
     counter+=1
     # if ((np.count_nonzero(region.intensity_image) <= 10) or (np.count_nonzero(region.intensity_image) > 2500)) :        
