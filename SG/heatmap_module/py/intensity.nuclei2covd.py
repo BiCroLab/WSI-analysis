@@ -79,9 +79,10 @@ counter=0
 print('r:',row,'c:',col,'nuclei:',numb_of_nuclei)
 for region in regionprops(mask_label,intensity_image=dapi_fov):
     counter+=1
-    if ((np.count_nonzero(region.intensity_image) <= 10) or (np.count_nonzero(region.intensity_image) > 2500)) :        
-        print('The number of pixels is '+str(np.count_nonzero(region.intensity_image))+' in region='+str(counter))
-    else:
+    # if ((np.count_nonzero(region.intensity_image) <= 10) or (np.count_nonzero(region.intensity_image) > 2500)) :        
+    #     print('The number of pixels is '+str(np.count_nonzero(region.intensity_image))+' in region='+str(counter))
+    # else:
+    if not ((np.count_nonzero(region.intensity_image) <= 10) or (np.count_nonzero(region.intensity_image) > 2500)) :        
         fov.append((int(row),int(col)))
         
         x = 512*int(col)+region.centroid[0] # shift by FOV location
@@ -101,8 +102,8 @@ if numb_of_nuclei > 0:
              centroids=centroids,
              descriptors=descriptors,
              morphology=morphology)
-else:
-    print('There are no nuclei in row='+str(row)+' and col='+str(col)+' in file: '+str(h5_file))
+# else:
+#     print('There are no nuclei in row='+str(row)+' and col='+str(col)+' in file: '+str(h5_file))
 
 # Update report 
 with open(basename+'.txt', 'a+', newline='') as myfile:
