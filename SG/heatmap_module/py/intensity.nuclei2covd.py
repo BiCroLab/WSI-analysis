@@ -24,7 +24,7 @@ def covd(mat):
     imd = np.pad( mat.astype(float), (1,1), 'constant') # path with zeros
 
     [x,y,I] = [ims.row,ims.col,ims.data]                # get position and intensity
-    pos = np.hstack((x,y))                              # define position vector
+    pos = np.asarray(list(zip(x,y)))                    # define position vector
     length = np.linalg.norm(pos,axis=1)                 # get the length of the position vectors
     
     Ix = [] #first derivative in x
@@ -76,12 +76,13 @@ centroids = []    #list of centroid coordinates for sc in each fov
 descriptors = []  #list of descriptors for sc in each fov
 morphology = [] #list of morphology features for sc in each fov
 counter=0
-print('r:',row,'c:',col,'nuclei:',numb_of_nuclei)
+#print('r:',row,'c:',col,'nuclei:',numb_of_nuclei)
 for region in regionprops(mask_label,intensity_image=dapi_fov):
     counter+=1
-    if ((np.count_nonzero(region.intensity_image) <= 10) or (np.count_nonzero(region.intensity_image) > 2500)) :        
-        print('The number of pixels is '+str(np.count_nonzero(region.intensity_image))+' in region='+str(counter))
-    else:
+    # if ((np.count_nonzero(region.intensity_image) <= 10) or (np.count_nonzero(region.intensity_image) > 2500)) :        
+    #     print('The number of pixels is '+str(np.count_nonzero(region.intensity_image))+' in region='+str(counter))
+    # else:
+    if not ((np.count_nonzero(region.intensity_image) <= 10) or (np.count_nonzero(region.intensity_image) > 2500)) :        
         fov.append((int(row),int(col)))
         
         x = 512*int(col)+region.centroid[0] # shift by FOV location
@@ -101,8 +102,8 @@ if numb_of_nuclei > 0:
              centroids=centroids,
              descriptors=descriptors,
              morphology=morphology)
-else:
-    print('There are no nuclei in row='+str(row)+' and col='+str(col)+' in file: '+str(h5_file))
+# else:
+#     print('There are no nuclei in row='+str(row)+' and col='+str(col)+' in file: '+str(h5_file))
 
 # Update report 
 with open(basename+'.txt', 'a+', newline='') as myfile:
