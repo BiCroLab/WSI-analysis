@@ -20,10 +20,13 @@ warnings.filterwarnings('ignore')
 from datetime import datetime
 
 def covd(mat):
-    ims = coo_matrix(mat)
-    imd = np.pad( mat.astype(float), (1,1), 'constant')
-    [x,y,I] = [ims.row,ims.col,ims.data]  
+    ims = coo_matrix(mat)       # make it sparse
+    imd = np.pad( mat.astype(float), (1,1), 'constant') # path with zeros
 
+    [x,y,I] = [ims.row,ims.col,ims.data]                # get position and intensity
+    pos = np.hstack((x,y))                              # define position vector
+    length = np.linalg.norm(pos,axis=1)                 # get the length of the position vectors
+    
     Ix = [] #first derivative in x
     Iy = [] #first derivative in y
     Ixx = [] #second der in x
@@ -38,7 +41,8 @@ def covd(mat):
         Iyy.append( imd[x[ind],y[ind]+1] - 2*imd[x[ind],y[ind]] + imd[x[ind],y[ind]-1] )
         Id.append(np.linalg.norm([Ix,Iy]))
         Idd.append(np.linalg.norm([Ixx,Iyy]))
-    descriptor = np.array( list(zip(list(x),list(y),list(I),Ix,Iy,Ixx,Iyy,Id,Idd)),dtype='int64' ).T     # descriptors
+    #descriptor = np.array( list(zip(list(x),list(y),list(I),Ix,Iy,Ixx,Iyy,Id,Idd)),dtype='int64' ).T     # descriptor
+    descriptor = np.array( list(zip(list(length),list(I),Ix,Iy,Ixx,Iyy,Id,Idd)),dtype='int64' ).T     # rotationally invariant descriptor 
     C = np.cov(descriptor) #covariance of the descriptor
     iu1 = np.triu_indices(C.shape[1]) # the indices of the upper triangular part
     covd2vec = C[iu1]
@@ -49,8 +53,8 @@ Set the input information
 '''
 h5_file = sys.argv[1]   #this file contains the segmented nuclei
 
-datadir = os.path.dirname(os.path.realpath(h5_file))
-basename = os.path.splitext(h5_file)[0]
+datadir = os.path.dirname(os.path.realpath(h5_file)) # the directory of the h5 file
+basename = os.path.splitext(h5_file)[0]              # the main name of the h5 file
 dapi_file = basename+'.tif' # the dapi file has to be located in the same directory as the h5 file
 npz_file = basename #this is the output file with spatial and morphological descriptors
 method = 'covd' #choose between covd rotational invariant or not: covdRI or covd 
