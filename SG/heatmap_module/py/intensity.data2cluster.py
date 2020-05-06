@@ -18,6 +18,7 @@ import seaborn as sns
 #plot_kwds = {'alpha' : 0.5, 's' : 80, 'linewidths':0}
 
 import os
+import sys
 import glob
 
 import numpy as np
@@ -36,6 +37,9 @@ plotly.io.orca.config.executable = '/usr/local/share/anaconda3/bin/orca'
 #    df = pd.read_pickle(filename)
 #    if sample_size > 0 and sample_size < df.shape[0]:
 #        df = df.sample(n=sample_size)
+
+filename = sys.argv[1]          # pkl file 
+
 def cluster_nuclei_intensity(filename,df,n_neighbors,threshold_q,auto_open,plot_switch):
     embedding = df[['xi','yi','zi']].to_numpy()   
     '''
@@ -76,33 +80,28 @@ def cluster_nuclei_intensity(filename,df,n_neighbors,threshold_q,auto_open,plot_
                          x="cx", y="cy",color="cluster_intensity",
                         width=800, height=800,
                         color_discrete_sequence=px.colors.qualitative.Set2)
-        fig.update_traces(marker=dict(size=2,opacity=1.0))
+        fig.update_traces(marker=dict(size=1,opacity=1.0))
         #fig.write_html(filename+'.spatial_projection.intensity.html', auto_open=auto_open)
         fig.write_image(filename+'.spatial_projection.intensity.png')
 
         # plot the low curvature sector
-        fig = px.scatter_3d(df,#1_filtered, 
-                            x="xi", y="yi", z="zi", 
-                            color="cluster_intensity", hover_name="cluster_intensity",
-                            color_discrete_sequence=px.colors.qualitative.Set2)
-        fig.update_traces(marker=dict(size=3,opacity=0.75),selector=dict(mode='markers'))
+        #fig = px.scatter_3d(df1_filtered,x="xi", y="yi", z="zi",color="cluster_intensity", hover_name="cluster_intensity",color_discrete_sequence=px.colors.qualitative.Set2)
+        #fig.update_traces(marker=dict(size=2,opacity=0.75),selector=dict(mode='markers'))
         #fig.write_html(filename+'.low_curvature_clusters.intensity.html', auto_open=auto_open)
-        fig.write_image(filename+'.low_curvature_clusters.intensity.png')
+        #fig.write_image(filename+'.low_curvature_clusters.intensity.png')
     return df
-
+##############################################################
 sample_size = 0 # set to 0 if the entire sample is considered
 n_neighbors = 100   # NNN in the curvature calculation
 threshold_q = 0.1   # the quantile defining the low-curvature sector
 auto_open = False    # switch to open or not html figures in new tab
 plot_switch = True  # switch to generate or not html figures
 
-for filename in glob.glob(r'../id_52.*.pkl'):
-    df = pd.read_pickle(filename)
-    if sample_size > 0 and sample_size < df.shape[0]:
-        df = df.sample(n=sample_size)
+df = pd.read_pickle(filename)
+if sample_size > 0 and sample_size < df.shape[0]:
+    df = df.sample(n=sample_size)
     
-    cluster_nuclei_intensity(filename,df,n_neighbors=100,threshold_q=0.1,auto_open=auto_open,
-                             plot_switch=plot_switch)
+cluster_nuclei_intensity(filename,df,n_neighbors=100,threshold_q=0.1,auto_open=auto_open,plot_switch=plot_switch)
 
 
 # Clustering based on morphology does not provide good looking spatial projections. The umap manifold seems to be too complicated, while the intensity manifold is more elongated and gives a more meaningful directions to use to interpret the result and make it consistent with the spatial projection

@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
-
 import numpy as np
 from skimage.io import imread, imsave
 from skimage.measure import label, regionprops
@@ -32,21 +29,16 @@ from skimage import exposure, img_as_ubyte
 import tifffile
 import random
 
-
-# In[8]:
-
-
+#############################################################################
 csv_file = sys.argv[1] #'../pkl/id_52.fov_centroids_embedding_morphology.covd.pkl.intensity.csv.gz' # path to the csv.gz file
 h5_path = sys.argv[2] #'../h5/id_52' # path to the h5 files
-
-
-# In[ ]:
-
+#############################################################################
 
 df = pd.read_csv(csv_file) # load the dataframe
+max_label = df.cluster_intensity.max()+1
 
 rc_df = df.groupby(['fov_row','fov_col']).size().reset_index().rename(columns={0:'count'}) # the df of row-col fov pairs
-for row, col in random.choices(list(zip(rc_df.fov_row, rc_df.fov_col)),k=1): # for a sample of k fov do ...
+for row, col in random.choices(list(zip(rc_df.fov_row, rc_df.fov_col)),k=10): # for a sample of k fov do ...
     df_fov = df.loc[(df['fov_row'] == row) & (df['fov_col'] == col)]
 
     # load the h5 file
@@ -61,7 +53,7 @@ for row, col in random.choices(list(zip(rc_df.fov_row, rc_df.fov_col)),k=1): # f
     dapi_file = basename+'.tif' # the dapi file has to be located in the same directory as the h5 file                                                                                  
     dapi_fov= np.squeeze(imread(dapi_file)) #the dapi tif file of the current FOV                                                                                          
     # define new_mask_label associated to clusters
-    new_mask_label = np.zeros((512,512))
+    new_mask_label = max_label*np.ones((512,512)) #set to the first integer greater than clusters id
     for index, nuclei in df_fov.iterrows(): # for each nucleus in csv in fov
         cx = nuclei['cx'] # read the centroid x coordinate
         cy = nuclei['cy'] # read the centroid y coordinate
@@ -72,8 +64,7 @@ for row, col in random.choices(list(zip(rc_df.fov_row, rc_df.fov_col)),k=1): # f
             y = 512*int(row)+region.centroid[1] # shift by FOV location                                                                                                                 
             if abs(x - cx) < 1.0E-6 and abs(y - cy) < 1.0E-6: # tolerate some error in the coordinate values
                 # find location in mask_label where label is equal to region.label
-                # sum 1 to make unclustered nuclei equal to bg_label 0
-                new_mask_label[mask_label == region.label] = cluster #+ 1 
+                new_mask_label[mask_label == region.label] = cluster 
     
     cluster_label = np.rot90(np.fliplr(new_mask_label)) # flip and rotate to match dapi 
     fig = plt.figure(figsize=(20, 10))
@@ -84,7 +75,10 @@ for row, col in random.choices(list(zip(rc_df.fov_row, rc_df.fov_col)),k=1): # f
     ax1.axis('off')
     # show post-clustering figure
     ax2 = fig.add_subplot(1,2,2)
-    ax2.imshow(invert(skimage.color.label2rgb(cluster_label, dapi_fov, bg_label=0)),origin='lower')
+    ax2.imshow(cluster_label, 
+               cmap='Set2', 
+               vmin = 1.0, vmax = max_label,
+               origin='lower')
     ax2.set_title('FOV row_'+str(row)+' col_'+str(col)+' AFTER clustering')
     ax2.axis('off')
     # save images as png file
@@ -93,15 +87,12 @@ for row, col in random.choices(list(zip(rc_df.fov_row, rc_df.fov_col)),k=1): # f
     dapi_uint8 = img_as_ubyte(exposure.rescale_intensity(dapi_fov)) # convert to uint8 to save as tiff file
     tensor = np.zeros((len(np.unique(df.cluster_intensity))+1,512,512),dtype=np.uint8) # +1 to include dapi channel
     tensor[0,:,:] = dapi_uint8 # dapi channel
-    for label_idx in range(1,tensor.shape[0]): # for each cluster
+    for label_idx in range(1,tensor.shape[0]): # for each cluster whose id start from 1
         array_2d = np.zeros((512,512)).astype(np.uint8)
         array_2d[cluster_label == label_idx] = 1 
         tensor[label_idx,:,:] = array_2d # save the channel
     with tifffile.TiffWriter(basename+'.ome.tiff', imagej=True) as tif:
         tif.save(tensor)
-
-
-# In[ ]:
 
 
 
