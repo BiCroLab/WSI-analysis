@@ -11,11 +11,6 @@ from plotly.graph_objs import *
 import plotly.express as px
 
 import seaborn as sns
-#%matplotlib inline
-#sns.set_context('poster')
-#sns.set_style('white')
-#sns.set_color_codes()
-#plot_kwds = {'alpha' : 0.5, 's' : 80, 'linewidths':0}
 
 import os
 import sys
@@ -30,13 +25,7 @@ import hdbscan
 from scipy.cluster.hierarchy import fcluster
 
 import plotly
-plotly.io.orca.config.executable = '/usr/local/share/anaconda3/bin/orca'
-
-#def cluster_nuclei(filename,sample_size,n_neighbors,threshold_q,min_cluster_size,min_samples):
-#def cluster_nuclei_intensity(filename,sample_size,n_neighbors,threshold_q,auto_open,plot_switch):
-#    df = pd.read_pickle(filename)
-#    if sample_size > 0 and sample_size < df.shape[0]:
-#        df = df.sample(n=sample_size)
+#plotly.io.orca.config.executable = '/usr/local/share/anaconda3/bin/orca'
 
 filename = sys.argv[1]          # pkl file 
 
@@ -65,30 +54,23 @@ def cluster_nuclei_intensity(filename,df,n_neighbors,threshold_q,auto_open,plot_
     plt.close()
     
     df1['cluster_intensity'] = clusterer.labels_    # add cluster id to dataframe
-    df1['cluster_intensity'] = df1['cluster_intensity'].apply(str)   # make cluster id a string
-    df1_filtered = df1[df1.cluster_intensity != str(-1)] # remove unassigned points
+    df1_filtered = df1[df1.cluster_intensity > -1] # remove unassigned points
 
     # expand the clusters to the entire point-cloud
     idx, dist = pairwise_distances_argmin_min(df[['xi','yi','zi']].to_numpy(),df1_filtered[['xi','yi','zi']].to_numpy())
     df['cluster_intensity'] = [int(df1_filtered.cluster_intensity.iloc[idx[row]])+1 for row in range(df.shape[0])] #add 1 to avoid confusion with background
     df['cluster_intensity'] = df['cluster_intensity'].apply(str)
-    df.to_csv(filename+'.intensity.csv',index=False)
     
+    df.to_csv(filename+'.intensity.csv',index=False) # writhe to file
     if plot_switch:
-        # plot the spatial projetion
-        fig = px.scatter(df,#1_filtered, 
+        fig = px.scatter(df,#1_filtered,                                                                                                                                            
                          x="cx", y="cy",color="cluster_intensity",
                         width=800, height=800,
                         color_discrete_sequence=px.colors.qualitative.Set2)
-        fig.update_traces(marker=dict(size=1,opacity=1.0))
-        #fig.write_html(filename+'.spatial_projection.intensity.html', auto_open=auto_open)
+        fig.update_traces(marker=dict(size=2,opacity=1.0))
+        fig.update_layout(template='simple_white')
+        fig.update_layout(legend= {'itemsizing': 'constant'})
         fig.write_image(filename+'.spatial_projection.intensity.png')
-
-        # plot the low curvature sector
-        #fig = px.scatter_3d(df1_filtered,x="xi", y="yi", z="zi",color="cluster_intensity", hover_name="cluster_intensity",color_discrete_sequence=px.colors.qualitative.Set2)
-        #fig.update_traces(marker=dict(size=2,opacity=0.75),selector=dict(mode='markers'))
-        #fig.write_html(filename+'.low_curvature_clusters.intensity.html', auto_open=auto_open)
-        #fig.write_image(filename+'.low_curvature_clusters.intensity.png')
     return df
 ##############################################################
 sample_size = 0 # set to 0 if the entire sample is considered
