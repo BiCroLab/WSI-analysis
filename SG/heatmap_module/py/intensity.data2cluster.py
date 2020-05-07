@@ -11,11 +11,6 @@ from plotly.graph_objs import *
 import plotly.express as px
 
 import seaborn as sns
-#%matplotlib inline
-#sns.set_context('poster')
-#sns.set_style('white')
-#sns.set_color_codes()
-#plot_kwds = {'alpha' : 0.5, 's' : 80, 'linewidths':0}
 
 import os
 import sys
@@ -31,12 +26,6 @@ from scipy.cluster.hierarchy import fcluster
 
 import plotly
 plotly.io.orca.config.executable = '/usr/local/share/anaconda3/bin/orca'
-
-#def cluster_nuclei(filename,sample_size,n_neighbors,threshold_q,min_cluster_size,min_samples):
-#def cluster_nuclei_intensity(filename,sample_size,n_neighbors,threshold_q,auto_open,plot_switch):
-#    df = pd.read_pickle(filename)
-#    if sample_size > 0 and sample_size < df.shape[0]:
-#        df = df.sample(n=sample_size)
 
 filename = sys.argv[1]          # pkl file 
 
