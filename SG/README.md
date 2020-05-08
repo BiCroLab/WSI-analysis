@@ -2,6 +2,8 @@
 * vips
 * exiftool
 * bioimage converter
+* UMAP
+* HDBSCAN
 
 ## Pipeline
 ### Segmentation
