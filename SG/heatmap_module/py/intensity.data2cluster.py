@@ -24,8 +24,11 @@ from sklearn.metrics import pairwise_distances_argmin_min
 import hdbscan
 from scipy.cluster.hierarchy import fcluster
 
+import warnings
+warnings.filterwarnings("ignore")
+
 import plotly
-plotly.io.orca.config.executable = '/usr/local/share/anaconda3/bin/orca'
+plotly.io.orca.config.executable = '/usr/local/share/anaconda3/bin/orca' # this has to be hard-coded for each machine
 
 filename = sys.argv[1]          # pkl file 
 
@@ -73,7 +76,7 @@ def cluster_nuclei_intensity(filename,df,n_neighbors,threshold_q,auto_open,plot_
         fig.write_image(filename+'.spatial_projection.intensity.png')
     return df
 ##############################################################
-sample_size = 0 # set to 0 if the entire sample is considered
+sample_size = 10000 # set to 0 if the entire sample is considered
 n_neighbors = 100   # NNN in the curvature calculation
 threshold_q = 0.1   # the quantile defining the low-curvature sector
 auto_open = False    # switch to open or not html figures in new tab
