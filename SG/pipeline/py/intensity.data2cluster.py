@@ -62,21 +62,29 @@ def cluster_nuclei_intensity(filename,df,n_neighbors,threshold_q,auto_open,plot_
     # expand the clusters to the entire point-cloud
     idx, dist = pairwise_distances_argmin_min(df[['xi','yi','zi']].to_numpy(),df1_filtered[['xi','yi','zi']].to_numpy())
     df['cluster_intensity'] = [int(df1_filtered.cluster_intensity.iloc[idx[row]])+1 for row in range(df.shape[0])] #add 1 to avoid confusion with background
-    df['cluster_intensity'] = df['cluster_intensity'].apply(str)
+    df['cluster_intensity'] = df['cluster_intensity']#.apply(str) # has to be int if using seaborn
     
     df.to_csv(filename+'.intensity.csv',index=False) # writhe to file
     if plot_switch:
-        fig = px.scatter(df,#1_filtered,                                                                                                                                            
-                         x="cx", y="cy",color="cluster_intensity",
-                        width=800, height=800,
-                        color_discrete_sequence=px.colors.qualitative.Set2)
-        fig.update_traces(marker=dict(size=2,opacity=1.0))
-        fig.update_layout(template='simple_white')
-        fig.update_layout(legend= {'itemsizing': 'constant'})
-        fig.write_image(filename+'.spatial_projection.intensity.png')
-    return df
+        # fig = px.scatter(df,#1_filtered,                                                                                                                                            
+        #                  x="cx", y="cy",color="cluster_intensity",
+        #                 width=800, height=800,
+        #                 color_discrete_sequence=px.colors.qualitative.Set2)
+        # fig.update_traces(marker=dict(size=2,opacity=1.0))
+        # fig.update_layout(template='simple_white')
+        # fig.update_layout(legend= {'itemsizing': 'constant'})
+        # fig.write_image(filename+'.spatial_projection.intensity.png')
+        sns.set_style("white")
+        ax = sns.scatterplot(x="cx",
+                             y="cy",
+                             hue="cluster_intensity",
+                             data=df,
+                             size=2,
+                             markers="."
+        )        
+        return df
 ##############################################################
-sample_size = 10000 # set to 0 if the entire sample is considered
+sample_size = -10000 # set to 0 if the entire sample is considered
 n_neighbors = 100   # NNN in the curvature calculation
 threshold_q = 0.1   # the quantile defining the low-curvature sector
 auto_open = False    # switch to open or not html figures in new tab
