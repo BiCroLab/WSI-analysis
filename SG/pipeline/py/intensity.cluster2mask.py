@@ -38,9 +38,8 @@ df = pd.read_csv(csv_file) # load the dataframe
 max_label = df.cluster_intensity.max()+1
 
 rc_df = df.groupby(['fov_row','fov_col']).size().reset_index().rename(columns={0:'count'}) # the df of row-col fov pairs
-for row, col in random.choices(list(zip(rc_df.fov_row, rc_df.fov_col)),k=10): # for a sample of k fov do ...
+for row, col in random.choices(list(zip(rc_df.fov_row, rc_df.fov_col)),k=10): # for a random sample of k FOV do ...
     df_fov = df.loc[(df['fov_row'] == row) & (df['fov_col'] == col)]
-
     # load the h5 file
     h5_file = glob.glob(h5_path+'/iMS*._r'+str(row)+'_c'+str(col)+'.h5')[0]   #this file contains the segmented nuclei                                                                                                                    
     fov = h5py.File(h5_file, 'r') # load the current fov segmentation                                                                                                                   
