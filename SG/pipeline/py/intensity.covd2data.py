@@ -36,8 +36,8 @@ for f in glob.glob(dirname+'/*covd.npz'):
         morphology = np.vstack((morphology, data['morphology']))
 
 # Clustering the intensity descriptors
-embedding_intensity = umap.UMAP(min_dist=0.0,n_components=3,random_state=42).fit_transform(covds) 
-#embedding_morphology = umap.UMAP(min_dist=0.0,n_components=3,random_state=42).fit_transform(morphology) 
+embedding_intensity = umap.UMAP(min_dist=0.0,n_components=3,random_state=42).fit_transform(covds) # embed intensity covd
+#embedding_morphology = umap.UMAP(min_dist=0.0,n_components=3,random_state=42).fit_transform(morphology) # embed morphological features
 
 # Create dataframes
 df_fov = pd.DataFrame(data=fov, columns=['fov_row','fov_col'])
