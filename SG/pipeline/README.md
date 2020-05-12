@@ -15,7 +15,7 @@ and format together morphologies and the reduced representation.
 
 * Input: morphopologies and descriptors
 
-* Output: a table
+* Output: a pkl table
 
 ## III pipe: data2cluster
 
@@ -23,7 +23,7 @@ Density based hierarchical clustering of the UMAP reduced representation
 
 * Input: the UMAP reduced representation
 
-* Output: clusters
+* Output: a csv table with cluster ID
 
 ## IV pipe: cluster2mask
 Visualize clusters and different nuclei masks in single FOVs 
