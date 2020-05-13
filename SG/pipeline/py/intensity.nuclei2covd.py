@@ -11,7 +11,7 @@ import os
 import sys
 import csv
 import glob
-
+import math
 import h5py
 from matplotlib import pyplot as plt
 import warnings
@@ -35,9 +35,9 @@ def covd(mat):
     Idd = [] #magnitude of the second der
     
     for ind in range(len(I)):
-        Ix.append( imd[x[ind]+1,y[ind]] - imd[x[ind]-1,y[ind]] )
+        Ix.append( 0.5*(imd[x[ind]+1,y[ind]] - imd[x[ind]-1,y[ind]]) )
         Ixx.append( imd[x[ind]+1,y[ind]] - 2*imd[x[ind],y[ind]] + imd[x[ind]-1,y[ind]] )
-        Iy.append( imd[x[ind],y[ind]+1] - imd[x[ind],y[ind]-1] )
+        Iy.append( 0.5*(imd[x[ind],y[ind]+1] - imd[x[ind],y[ind]-1]) )
         Iyy.append( imd[x[ind],y[ind]+1] - 2*imd[x[ind],y[ind]] + imd[x[ind],y[ind]-1] )
         Id.append(np.linalg.norm([Ix,Iy]))
         Idd.append(np.linalg.norm([Ixx,Iyy]))
@@ -56,8 +56,8 @@ h5_file = sys.argv[1]   #this file contains the segmented nuclei
 datadir = os.path.dirname(os.path.realpath(h5_file)) # the directory of the h5 file
 basename = os.path.splitext(h5_file)[0]              # the main name of the h5 file
 dapi_file = basename+'.tif' # the dapi file has to be located in the same directory as the h5 file
-npz_file = basename #this is the output file with spatial and morphological descriptors
-method = 'covd' #choose between covd rotational invariant or not: covdRI or covd 
+npz_file = basename # this is the output file with spatial and morphological descriptors
+#method = 'covd' #choose between covd rotational invariant or not: covdRI or covd 
 
 fov = h5py.File(h5_file, 'r') # load the current fov segmentation
 mask = fov['/exported_watershed_masks'][:]
@@ -89,21 +89,28 @@ for region in regionprops(mask_label,intensity_image=dapi_fov):
         y = 512*int(row)+region.centroid[1] # shift by FOV location
         centroids.append((x,y))
 
-        morphology.append((region.area,region.perimeter,region.solidity,region.eccentricity,region.mean_intensity))
+        morphology.append((region.area,
+                           region.perimeter,
+                           region.solidity,
+                           region.eccentricity,
+                           region.mean_intensity,
+                           (4 * math.pi * region.area) / (region.perimeter * region.perimeter) # circularity
+        ))
         
-        descriptors.append(covd(region.intensity_image))
+#        descriptors.append(covd(region.intensity_image))
+        descriptors.append(covd(dapi_fov))
 
 dateTimeObj = datetime.now() # Returns a datetime object containing the local date and time
 
 # Save information to file
 if numb_of_nuclei > 0:
-    np.savez(str(npz_file)+'_'+str(method)+'.npz',
+    np.savez(str(npz_file)+'.covd.npz',
              fov=fov,
              centroids=centroids,
              descriptors=descriptors,
              morphology=morphology)
-# else:
-#     print('There are no nuclei in row='+str(row)+' and col='+str(col)+' in file: '+str(h5_file))
+else:
+    print('There are no nuclei in row='+str(row)+' and col='+str(col)+' in file: '+str(h5_file))
 
 # Update report 
 with open(basename+'.txt', 'a+', newline='') as myfile:
