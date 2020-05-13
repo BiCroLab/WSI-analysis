@@ -24,7 +24,6 @@ import tifffile
 import random
 import seaborn as sns; sns.set()
 
-
 #colormap_name = 'Set2'
 csv_file = sys.argv[1] # path to csv.gz file
 h5_dir = sys.argv[2]   # directory with h5 files
@@ -35,8 +34,7 @@ ticks=np.arange(df.cluster_intensity.min(),df.cluster_intensity.max()+1 )
 boundaries = np.arange(df.cluster_intensity.min()-.5,df.cluster_intensity.max()+1.5 )
 
 rc_df = df.groupby(['fov_row','fov_col']).size().reset_index().rename(columns={0:'count'}) # the df of row-col fov pairs
-for row, col in random.choices(list(zip(rc_df.fov_row, rc_df.fov_col)),k=2):
-    print(row,col)
+for row, col in random.choices(list(zip(rc_df.fov_row, rc_df.fov_col)),k=10):
     df_fov = df.loc[(df['fov_row'] == row) & (df['fov_col'] == col)]
     # load the h5 file
     h5_file = glob.glob(h5_dir+'/iMS*._r'+str(row)+'_c'+str(col)+'.h5')[0]   #this file contains the segmented nuclei                                                                                                                    
@@ -56,7 +54,7 @@ for row, col in random.choices(list(zip(rc_df.fov_row, rc_df.fov_col)),k=2):
     for index, nuclei in df_fov.iterrows(): # for each nucleus in csv in fov
         cx = nuclei['cx'] # read the centroid x coordinate
         cy = nuclei['cy'] # read the centroid y coordinate
-        cluster = int(nuclei['cluster_intensity']) # read the cluster label
+        cluster = int(nuclei['clusterID1']) # read the cluster label
         for region in regionprops(mask_label,intensity_image=dapi_fov): # for each nucleus in fov
             #if a region is too small or too large do not consider it
             x = 512*int(col)+region.centroid[0] # shift by FOV location                                                                                                                 
