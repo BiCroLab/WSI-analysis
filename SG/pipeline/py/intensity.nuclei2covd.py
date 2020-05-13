@@ -20,19 +20,19 @@ warnings.filterwarnings('ignore')
 from datetime import datetime
 
 def covd(mat):
-    ims = coo_matrix(mat)       # make it sparse
+    ims = coo_matrix(mat)                               # make it sparse
     imd = np.pad( mat.astype(float), (1,1), 'constant') # path with zeros
 
     [x,y,I] = [ims.row,ims.col,ims.data]                # get position and intensity
     pos = np.asarray(list(zip(x,y)))                    # define position vector
     length = np.linalg.norm(pos,axis=1)                 # get the length of the position vectors
     
-    Ix = [] #first derivative in x
-    Iy = [] #first derivative in y
-    Ixx = [] #second der in x
-    Iyy = [] #second der in y 
-    Id = [] #magnitude of the first der 
-    Idd = [] #magnitude of the second der
+    Ix = []  # first derivative in x
+    Iy = []  # first derivative in y
+    Ixx = [] # second der in x
+    Iyy = [] # second der in y 
+    Id = []  # magnitude of the first der 
+    Idd = [] # magnitude of the second der
     
     for ind in range(len(I)):
         Ix.append( 0.5*(imd[x[ind]+1,y[ind]] - imd[x[ind]-1,y[ind]]) )
@@ -41,9 +41,9 @@ def covd(mat):
         Iyy.append( imd[x[ind],y[ind]+1] - 2*imd[x[ind],y[ind]] + imd[x[ind],y[ind]-1] )
         Id.append(np.linalg.norm([Ix,Iy]))
         Idd.append(np.linalg.norm([Ixx,Iyy]))
-    #descriptor = np.array( list(zip(list(x),list(y),list(I),Ix,Iy,Ixx,Iyy,Id,Idd)),dtype='int64' ).T     # descriptor
+    #descriptor = np.array( list(zip(list(x),list(y),list(I),Ix,Iy,Ixx,Iyy,Id,Idd)),dtype='int64' ).T # descriptor
     descriptor = np.array( list(zip(list(length),list(I),Ix,Iy,Ixx,Iyy,Id,Idd)),dtype='int64' ).T     # rotationally invariant descriptor 
-    C = np.cov(descriptor) #covariance of the descriptor
+    C = np.cov(descriptor)            # covariance of the descriptor
     iu1 = np.triu_indices(C.shape[1]) # the indices of the upper triangular part
     covd2vec = C[iu1]
     return covd2vec
@@ -51,18 +51,18 @@ def covd(mat):
 '''
 Set the input information
 '''
-h5_file = sys.argv[1]   #this file contains the segmented nuclei
+h5_file = sys.argv[1]   # this file contains the segmented nuclei
 
 datadir = os.path.dirname(os.path.realpath(h5_file)) # the directory of the h5 file
 basename = os.path.splitext(h5_file)[0]              # the main name of the h5 file
 dapi_file = basename+'.tif' # the dapi file has to be located in the same directory as the h5 file
-npz_file = basename # this is the output file with spatial and morphological descriptors
+npz_file = basename         # this is the output file with spatial and morphological descriptors
 #method = 'covd' #choose between covd rotational invariant or not: covdRI or covd 
 
 fov = h5py.File(h5_file, 'r') # load the current fov segmentation
 mask = fov['/exported_watershed_masks'][:]
-mask_reduced = np.squeeze(mask, axis=2) #to get rid of the third dimension
-dapi_fov= cv2.imread(dapi_file,cv2.IMREAD_GRAYSCALE) #the dapi tif file of the current FOV
+mask_reduced = np.squeeze(mask, axis=2)              # to get rid of the third dimension
+dapi_fov= cv2.imread(dapi_file,cv2.IMREAD_GRAYSCALE) # the dapi tif file of the current FOV
 
 #Check which position the current FOV occupies within the big scan
 row = h5_file.split('_r',1)[1].split('_c')[0]
@@ -71,17 +71,14 @@ col = h5_file.split('_r',1)[1].split('_c')[1].split('.')[0]
 # label all connected components in the fov, 0 is background
 mask_label, numb_of_nuclei = label(mask_reduced,return_num=True) 
 
-fov = [] #list of fov locations
-centroids = []    #list of centroid coordinates for sc in each fov
-descriptors = []  #list of descriptors for sc in each fov
-morphology = [] #list of morphology features for sc in each fov
+fov = []          # list of fov locations
+centroids = []    # list of centroid coordinates for sc in each fov
+descriptors = []  # list of descriptors for sc in each fov
+morphology = []   # list of morphology features for sc in each fov
 counter=0
 #print('r:',row,'c:',col,'nuclei:',numb_of_nuclei)
 for region in regionprops(mask_label,intensity_image=dapi_fov):
     counter+=1
-    # if ((np.count_nonzero(region.intensity_image) <= 10) or (np.count_nonzero(region.intensity_image) > 2500)) :        
-    #     print('The number of pixels is '+str(np.count_nonzero(region.intensity_image))+' in region='+str(counter))
-    # else:
     if not ((np.count_nonzero(region.intensity_image) <= 10) or (np.count_nonzero(region.intensity_image) > 2500)) :        
         fov.append((int(row),int(col)))
         
@@ -93,12 +90,11 @@ for region in regionprops(mask_label,intensity_image=dapi_fov):
                            region.perimeter,
                            region.solidity,
                            region.eccentricity,
+                           (4 * math.pi * region.area) / (region.perimeter * region.perimeter), # circularity
                            region.mean_intensity,
-                           (4 * math.pi * region.area) / (region.perimeter * region.perimeter) # circularity
+                           np.std(region.intensity_image[region.intensity_image>0])
         ))
-        
-#        descriptors.append(covd(region.intensity_image))
-        descriptors.append(covd(dapi_fov))
+        descriptors.append( covd(region.intensity_image) )
 
 dateTimeObj = datetime.now() # Returns a datetime object containing the local date and time
 
@@ -109,12 +105,12 @@ if numb_of_nuclei > 0:
              centroids=centroids,
              descriptors=descriptors,
              morphology=morphology)
-else:
-    print('There are no nuclei in row='+str(row)+' and col='+str(col)+' in file: '+str(h5_file))
+# else:
+#     print('There are no nuclei in row='+str(row)+' and col='+str(col)+' in file: '+str(h5_file))
 
 # Update report 
 with open(basename+'.txt', 'a+', newline='') as myfile:
      wr = csv.writer(myfile)
-     wr.writerow([dateTimeObj,'row='+str(row),'col='+str(col),'nuclei='+str(numb_of_nuclei),'#descriptors='+str(len(descriptors))])
+     wr.writerow([dateTimeObj,'row='+str(row),'col='+str(col),'nuclei='+str(numb_of_nuclei),'descriptors='+str(len(descriptors))])
      
 
