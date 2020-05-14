@@ -77,5 +77,5 @@ df_embedding_intensity.reset_index(drop=True, inplace=True)
 df_final = pd.concat([fdf[fdf.columns[:4]], fdf[fdf.columns[-8:]], df_embedding_intensity],axis=1)
 
 # Save dataframe
-df.to_pickle("id_"+str(sample)+".measurements.covd.pkl")
+df_final.to_pickle("id_"+str(sample)+".measurements.covd.pkl")
 
