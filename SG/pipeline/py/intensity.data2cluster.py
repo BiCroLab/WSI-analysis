@@ -74,11 +74,11 @@ def cluster_nuclei_intensity(filename,df,n_neighbors,threshold_q,auto_open,plot_
 ##############################################################
 filename = sys.argv[1]          # pkl file 
 
-sample_size = 10000 # set to 0 if the entire sample is considered
+sample_size = -1 # set to 0 if the entire sample is considered
 n_neighbors = 100   # NNN in the curvature calculation
 threshold_q = 0.1   # the quantile defining the low-curvature sector
 auto_open = False    # switch to open or not html figures in new tab
-plot_switch = False  # switch to generate or not html figures
+plot_switch = True  # switch to generate or not html figures
 
 df = pd.read_pickle(filename)
 print('The datafram has shape ',df.shape)
@@ -86,7 +86,7 @@ if sample_size > 0 and sample_size < df.shape[0]:
     df = df.sample(n=sample_size)
 
 print('The datafram has shape ',df.shape)    
-cluster_nuclei_intensity(filename,df,n_neighbors=100,threshold_q=0.1,auto_open=auto_open,plot_switch=plot_switch)
+cluster_nuclei_intensity(filename,df,n_neighbors=n_neighbors,threshold_q=threshold_q,auto_open=auto_open,plot_switch=plot_switch)
 
 
 # Clustering based on morphology does not provide good looking spatial projections. The umap manifold seems to be too complicated, while the intensity manifold is more elongated and gives a more meaningful directions to use to interpret the result and make it consistent with the spatial projection
