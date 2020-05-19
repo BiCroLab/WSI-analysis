@@ -176,7 +176,7 @@ for c in list_clusterID3:  # for each cluster
 
 print('Cluster the profiles with kmeans')
 # kmeans = KMeans(n_clusters=4, random_state=0, n_jobs=-1).fit(profiles)
-kmeans = MiniBatchKMeans(n_clusters=4, random_state=0).fit(profiles)
+kmeans = MiniBatchKMeans(n_clusters=4, random_state=0, batch_size=10000).fit(profiles)
 
 # map clusterID3 to kmeans labels
 dic = {}
