@@ -18,7 +18,7 @@ from sklearn.metrics import pairwise_distances_argmin_min
 import hdbscan
 from scipy.cluster.hierarchy import fcluster
 from sklearn import preprocessing
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, MiniBatchKMeans
 import umap
 
 import warnings
@@ -175,7 +175,8 @@ for c in list_clusterID3:  # for each cluster
     row += 1
 
 print('Cluster the profiles with kmeans')
-kmeans = KMeans(n_clusters=4, random_state=0).fit(profiles)
+# kmeans = KMeans(n_clusters=4, random_state=0, n_jobs=-1).fit(profiles)
+kmeans = MiniBatchKMeans(n_clusters=4, random_state=0).fit(profiles)
 
 # map clusterID3 to kmeans labels
 dic = {}
