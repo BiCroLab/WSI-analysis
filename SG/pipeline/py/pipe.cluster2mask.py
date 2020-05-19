@@ -54,7 +54,7 @@ for row, col in random.choices(list(zip(rc_df.fov_row, rc_df.fov_col)),k=10):
     for index, nuclei in df_fov.iterrows(): # for each nucleus in csv in fov
         cx = nuclei['cx'] # read the centroid x coordinate
         cy = nuclei['cy'] # read the centroid y coordinate
-        cluster = int(nuclei['clusterID1']) # read the cluster label
+        cluster = int(nuclei['clusterID3']) # read the cluster label
         for region in regionprops(mask_label,intensity_image=dapi_fov): # for each nucleus in fov
             #if a region is too small or too large do not consider it
             x = 512*int(col)+region.centroid[0] # shift by FOV location                                                                                                                 
