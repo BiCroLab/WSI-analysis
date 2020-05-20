@@ -29,6 +29,7 @@ csv_file = sys.argv[1] # path to csv.gz file
 h5_dir = sys.argv[2]   # directory with h5 files
 
 df = pd.read_csv(csv_file)
+df['clusterID3'] = df['clusterID3'].add(1) # add 1 because cluster ID=0 can be confused with background in FOVs 
 cmap = plt.get_cmap("Set2", df.clusterID3.max()-df.clusterID3.min()+1)
 ticks=np.arange(df.clusterID3.min(),df.clusterID3.max()+1 )
 boundaries = np.arange(df.clusterID3.min()-.5,df.clusterID3.max()+1.5 )
