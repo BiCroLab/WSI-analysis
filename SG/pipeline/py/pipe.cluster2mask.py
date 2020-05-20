@@ -29,9 +29,9 @@ csv_file = sys.argv[1] # path to csv.gz file
 h5_dir = sys.argv[2]   # directory with h5 files
 
 df = pd.read_csv(csv_file)
-cmap = plt.get_cmap("Set2", df.cluster_intensity.max()-df.cluster_intensity.min()+1)
-ticks=np.arange(df.cluster_intensity.min(),df.cluster_intensity.max()+1 )
-boundaries = np.arange(df.cluster_intensity.min()-.5,df.cluster_intensity.max()+1.5 )
+cmap = plt.get_cmap("Set2", df.clusterID3.max()-df.clusterID3.min()+1)
+ticks=np.arange(df.clusterID3.min(),df.clusterID3.max()+1 )
+boundaries = np.arange(df.clusterID3.min()-.5,df.clusterID3.max()+1.5 )
 
 rc_df = df.groupby(['fov_row','fov_col']).size().reset_index().rename(columns={0:'count'}) # the df of row-col fov pairs
 for row, col in random.choices(list(zip(rc_df.fov_row, rc_df.fov_col)),k=10):
@@ -72,7 +72,7 @@ for row, col in random.choices(list(zip(rc_df.fov_row, rc_df.fov_col)),k=10):
     # Plot clusters
     ax2 = fig.add_subplot(1,2,2)
     ax2 = sns.heatmap(np.rot90(new_mask_label).astype(int),
-                      vmin=1, vmax=df.cluster_intensity.max(), 
+                      vmin=1, vmax=df.clusterID3.max(), 
                       cmap = cmap,
                       cbar_kws={"shrink": .5,"ticks":ticks, "boundaries":boundaries},
                       cbar = True, 
@@ -87,7 +87,7 @@ for row, col in random.choices(list(zip(rc_df.fov_row, rc_df.fov_col)),k=10):
     plt.savefig(basename+'.dapi-clustering.png')
     # save dapi and clusters as tiff file    
     dapi_uint8 = img_as_ubyte(exposure.rescale_intensity(dapi_fov)) # convert to uint8 to save as tiff file
-    tensor = np.zeros((len(np.unique(df.cluster_intensity))+1,512,512),dtype=np.uint8) # +1 to include dapi channel
+    tensor = np.zeros((len(np.unique(df.clusterID3))+1,512,512),dtype=np.uint8) # +1 to include dapi channel
     tensor[0,:,:] = dapi_uint8 # dapi channel
     for label_idx in range(1,tensor.shape[0]): # for each cluster
         array_2d = np.zeros((512,512)).astype(np.uint8)

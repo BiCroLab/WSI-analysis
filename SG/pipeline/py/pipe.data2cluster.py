@@ -46,11 +46,10 @@ def cluster_nuclei_intensity(filename,df,n_neighbors,threshold_q,min_cluster_siz
 
     clusterer = hdbscan.HDBSCAN(min_samples=min_samples,min_cluster_size=min_cluster_size,gen_min_span_tree=True)
     clusterer.fit(df1.loc[:,('xi','yi','zi')]) 
-    clusterer.condensed_tree_.plot(select_clusters=True,
-                                   selection_palette=sns.color_palette("Set2",len(clusterer.labels_)))
+    #clusterer.condensed_tree_.plot(select_clusters=True,selection_palette=sns.color_palette("Set2",len(clusterer.labels_)))
     #plt.show()
-    plt.savefig(filename+'.tree.intensity.png')
-    plt.close()
+    #plt.savefig(filename+'.tree.intensity.png')
+    #plt.close()
     
     df1['clusterID1'] = clusterer.labels_    # add cluster id to dataframe
     df1['clusterID1'] = df1['clusterID1'].apply(str)   # make cluster id a string
