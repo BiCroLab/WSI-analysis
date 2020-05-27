@@ -14,39 +14,12 @@ import glob
 import math
 import h5py
 from matplotlib import pyplot as plt
+from gravity import *
 import warnings
 warnings.filterwarnings('ignore')
 
 from datetime import datetime
 
-def covd(mat):
-    ims = coo_matrix(mat)                               # make it sparse
-    imd = np.pad( mat.astype(float), (1,1), 'constant') # path with zeros
-
-    [x,y,I] = [ims.row,ims.col,ims.data]                # get position and intensity
-    pos = np.asarray(list(zip(x,y)))                    # define position vector
-    length = np.linalg.norm(pos,axis=1)                 # get the length of the position vectors
-    
-    Ix = []  # first derivative in x
-    Iy = []  # first derivative in y
-    Ixx = [] # second der in x
-    Iyy = [] # second der in y 
-    Id = []  # magnitude of the first der 
-    Idd = [] # magnitude of the second der
-    
-    for ind in range(len(I)):
-        Ix.append( 0.5*(imd[x[ind]+1,y[ind]] - imd[x[ind]-1,y[ind]]) )
-        Ixx.append( imd[x[ind]+1,y[ind]] - 2*imd[x[ind],y[ind]] + imd[x[ind]-1,y[ind]] )
-        Iy.append( 0.5*(imd[x[ind],y[ind]+1] - imd[x[ind],y[ind]-1]) )
-        Iyy.append( imd[x[ind],y[ind]+1] - 2*imd[x[ind],y[ind]] + imd[x[ind],y[ind]-1] )
-        Id.append(np.linalg.norm([Ix,Iy]))
-        Idd.append(np.linalg.norm([Ixx,Iyy]))
-    #descriptor = np.array( list(zip(list(x),list(y),list(I),Ix,Iy,Ixx,Iyy,Id,Idd)),dtype='int64' ).T # descriptor
-    descriptor = np.array( list(zip(list(length),list(I),Ix,Iy,Ixx,Iyy,Id,Idd)),dtype='int64' ).T     # rotationally invariant descriptor 
-    C = np.cov(descriptor)            # covariance of the descriptor
-    iu1 = np.triu_indices(C.shape[1]) # the indices of the upper triangular part
-    covd2vec = C[iu1]
-    return covd2vec
 
 '''
 Set the input information
@@ -96,23 +69,17 @@ for region in regionprops(mask_label,intensity_image=dapi_fov):
                            region.mean_intensity,
                            np.std(region.intensity_image[region.intensity_image>0])
         ))
-#        descriptors.append( covd(region.intensity_image) )
 
 dateTimeObj = datetime.now() # Returns a datetime object containing the local date and time
 
 # Save information to file
 if numb_of_nuclei > 0:
-    np.savez(str(npz_file)+'.covd.npz',
+    np.savez(str(npz_file)+'.features.npz',
              fov=fov,
              centroids=centroids,
- #            descriptors=descriptors,
              morphology=morphology)
 # else:
 #     print('There are no nuclei in row='+str(row)+' and col='+str(col)+' in file: '+str(h5_file))
 
-# Update report 
-#with open(basename+'.txt', 'a+', newline='') as myfile:
- #    wr = csv.writer(myfile)
-  #   wr.writerow([dateTimeObj,'row='+str(row),'col='+str(col),'nuclei='+str(numb_of_nuclei),'descriptors='+str(len(descriptors))])
      
 

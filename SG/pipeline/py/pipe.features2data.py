@@ -13,43 +13,29 @@ import plotly.express as px
 import hdbscan
 import pandas as pd
 import umap
+from graviti import *
+import networkx as nx
+from scipy import sparse, linalg
 import warnings
 warnings.filterwarnings('ignore')
 
-def filtering(df):
-    #First removing columns
-    filt_df = df[["area","perimeter","solidity","eccentricity","circularity","mean_intensity","std_intensity"]]
-    df_keep = df.drop(["area","perimeter","solidity","eccentricity","circularity","mean_intensity","std_intensity"], axis=1)
-    #Then, computing percentiles
-    low = .01
-    high = .99
-    quant_df = filt_df.quantile([low, high])
-    #Next filtering values based on computed percentiles
-    filt_df = filt_df.apply(lambda x: x[(x>quant_df.loc[low,x.name]) & 
-                                        (x < quant_df.loc[high,x.name])], axis=0)
-    #Bringing the columns back
-    filt_df = pd.concat( [df_keep,filt_df], axis=1 )
-    filt_df['cov_intensity'] = filt_df['std_intensity']/filt_df['mean_intensity']
-    #rows with NaN values can be dropped simply like this
-    filt_df.dropna(inplace=True)
-    return filt_df
 
-dirname = sys.argv[1] # the directory where covd.npz files are located
+dirname = sys.argv[1] # the directory where features.npz files are located
 sample = sys.argv[2]  # the sample id
 
 counter = 0
-for f in glob.glob(dirname+'/*covd.npz'): # for every fov
+for f in glob.glob(dirname+'/*features.npz'): # for every fov
     counter += 1
     if counter == 1:            # to set up the data arrays
         data = np.load(f,allow_pickle=True)
         fov = data['fov']
-        covds = data['descriptors']
+#        covds = data['descriptors']
         xy = data['centroids']
         morphology = data['morphology']
     else:                       # to update the data arrays
         data = np.load(f,allow_pickle=True)
         fov = np.vstack((fov,data['fov']))
-        covds = np.vstack((covds, data['descriptors']))
+#        covds = np.vstack((covds, data['descriptors']))
         xy = np.vstack((xy, data['centroids']))
         morphology = np.vstack((morphology, data['morphology']))
 
@@ -57,25 +43,44 @@ for f in glob.glob(dirname+'/*covd.npz'): # for every fov
 df_fov = pd.DataFrame(data=fov, columns=['fov_row','fov_col'])
 df_xy = pd.DataFrame(data=xy, columns=['cx','cy'])
 df_morphology = pd.DataFrame(data=morphology, columns=['area','perimeter','solidity','eccentricity','circularity','mean_intensity','std_intensity'])
-df_covds = pd.DataFrame(data=covds)
+#df_covds = pd.DataFrame(data=covds)
 
 # Concatenate all dataframes
-df = pd.concat([df_fov,df_xy, df_morphology, df_covds],axis=1)
+df = pd.concat([df_fov,df_xy, df_morphology],axis=1)
 
 # filter by percentiles in morphologies (hardcoded in function filtering)
-fdf = filtering(df)
+fdf = filtering(df)#.sample(n=100000)
 
-# UMAP representation of the intensity descriptors, always check the proper column selection!
-embedding_intensity = umap.UMAP(min_dist=0.0,n_components=3,random_state=42).fit_transform(fdf[fdf.columns[4:-8]]) 
+# Get the positions of centroids 
+pos = fdf[fdf.columns[2:4]].to_numpy()
 
-# Create dataframes of the umap embedding
-df_embedding_intensity = pd.DataFrame(data=embedding_intensity, columns=['xi','yi','zi'])
+print('Build the UMAP graph')
+A = space2graph(pos,10)
+sparse.save_npz(sample+'.graph.npz', A)
+G = nx.from_scipy_sparse_matrix(A, edge_attribute='weight')
+nx.write_gpickle(G, sample+".graph.pickle")
 
-# Concatenate the embedded dataframes
-fdf.reset_index(drop=True, inplace=True)
-df_embedding_intensity.reset_index(drop=True, inplace=True)
-df_final = pd.concat([fdf[fdf.columns[:4]], fdf[fdf.columns[-8:]], df_embedding_intensity],axis=1)
+print('Smooth the morphology')
+radius = 100
+data = fdf[fdf.columns[4:]].to_numpy()
+smooth_data = smoothing(A,data,radius)
+new_fdf = pd.DataFrame(data=smooth_data,columns=fdf.columns[4:],index=fdf.index)
+df = pd.concat([fdf[fdf.columns[:4]],new_fdf],axis=1)
 
 # Save dataframe
-df_final.to_pickle("id_"+str(sample)+".measurements.covd.pkl")
+df.to_pickle("id_"+str(sample)+".measurements.smoothed.r"+str(radius)+".pkl")
+
+# UMAP representation of the intensity descriptors, always check the proper column selection!
+#embedding_intensity = umap.UMAP(min_dist=0.0,n_components=3,random_state=42).fit_transform(fdf[fdf.columns[4:-8]]) 
+
+# # Create dataframes of the umap embedding
+# df_embedding_intensity = pd.DataFrame(data=embedding_intensity, columns=['xi','yi','zi'])
+
+# # Concatenate the embedded dataframes
+# fdf.reset_index(drop=True, inplace=True)
+# df_embedding_intensity.reset_index(drop=True, inplace=True)
+# df_final = pd.concat([fdf[fdf.columns[:4]], fdf[fdf.columns[-8:]], df_embedding_intensity],axis=1)
+
+# # Save dataframe
+# df_final.to_pickle("id_"+str(sample)+".measurements.covd.pkl")
 
