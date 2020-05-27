@@ -13,6 +13,25 @@ warnings.filterwarnings('ignore')
 from sklearn.preprocessing import normalize
 import numba
 import igraph
+import pandas as pd
+
+def filtering(df):
+    #First removing columns
+    filt_df = df[["area","perimeter","solidity","eccentricity","circularity","mean_intensity","std_intensity"]]
+    df_keep = df.drop(["area","perimeter","solidity","eccentricity","circularity","mean_intensity","std_intensity"], axis=1)
+    #Then, computing percentiles
+    low = .01
+    high = .99
+    quant_df = filt_df.quantile([low, high])
+    #Next filtering values based on computed percentiles
+    filt_df = filt_df.apply(lambda x: x[(x>quant_df.loc[low,x.name]) & 
+                                        (x < quant_df.loc[high,x.name])], axis=0)
+    #Bringing the columns back
+    filt_df = pd.concat( [df_keep,filt_df], axis=1 )
+    filt_df['cov_intensity'] = filt_df['std_intensity']/filt_df['mean_intensity']
+    #rows with NaN values can be dropped simply like this
+    filt_df.dropna(inplace=True)
+    return filt_df
 
 def space2graph(positions,nn):
     XY = positions#np.loadtxt(filename, delimiter="\t",skiprows=True,usecols=(5,6))
@@ -70,7 +89,37 @@ def smoothing(W,data,radius):
             smooth = summa*1.0/(counter+1)
     return smooth
 
-def covd(features,G,threshold,quantiles,node_color):
+def covd(mat):
+    ims = coo_matrix(mat)                               # make it sparse
+    imd = np.pad( mat.astype(float), (1,1), 'constant') # path with zeros
+
+    [x,y,I] = [ims.row,ims.col,ims.data]                # get position and intensity
+    pos = np.asarray(list(zip(x,y)))                    # define position vector
+    length = np.linalg.norm(pos,axis=1)                 # get the length of the position vectors
+    
+    Ix = []  # first derivative in x
+    Iy = []  # first derivative in y
+    Ixx = [] # second der in x
+    Iyy = [] # second der in y 
+    Id = []  # magnitude of the first der 
+    Idd = [] # magnitude of the second der
+    
+    for ind in range(len(I)):
+        Ix.append( 0.5*(imd[x[ind]+1,y[ind]] - imd[x[ind]-1,y[ind]]) )
+        Ixx.append( imd[x[ind]+1,y[ind]] - 2*imd[x[ind],y[ind]] + imd[x[ind]-1,y[ind]] )
+        Iy.append( 0.5*(imd[x[ind],y[ind]+1] - imd[x[ind],y[ind]-1]) )
+        Iyy.append( imd[x[ind],y[ind]+1] - 2*imd[x[ind],y[ind]] + imd[x[ind],y[ind]-1] )
+        Id.append(np.linalg.norm([Ix,Iy]))
+        Idd.append(np.linalg.norm([Ixx,Iyy]))
+    #descriptor = np.array( list(zip(list(x),list(y),list(I),Ix,Iy,Ixx,Iyy,Id,Idd)),dtype='int64' ).T # descriptor
+    descriptor = np.array( list(zip(list(length),list(I),Ix,Iy,Ixx,Iyy,Id,Idd)),dtype='int64' ).T     # rotationally invariant descriptor 
+    C = np.cov(descriptor)            # covariance of the descriptor
+    iu1 = np.triu_indices(C.shape[1]) # the indices of the upper triangular part
+    covd2vec = C[iu1]
+    return covd2vec
+
+
+def covd_old(features,G,threshold,quantiles,node_color):
     L = nx.laplacian_matrix(G)
     delta_features = L.dot(features)
     data = np.hstack((features,delta_features)) #it has 16 features
