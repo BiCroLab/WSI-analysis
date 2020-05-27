@@ -73,10 +73,12 @@ mask_label, numb_of_nuclei = label(mask_reduced,return_num=True)
 
 fov = []          # list of fov locations
 centroids = []    # list of centroid coordinates for sc in each fov
-descriptors = []  # list of descriptors for sc in each fov
+#descriptors = []  # list of descriptors for sc in each fov
 morphology = []   # list of morphology features for sc in each fov
 counter=0
-#print('r:',row,'c:',col,'nuclei:',numb_of_nuclei)
+
+print('r:',row,'c:',col,'nuclei:',numb_of_nuclei)
+
 for region in regionprops(mask_label,intensity_image=dapi_fov):
     counter+=1
     if not ((np.count_nonzero(region.intensity_image) <= 10) or (np.count_nonzero(region.intensity_image) > 2500)) :        
@@ -94,7 +96,7 @@ for region in regionprops(mask_label,intensity_image=dapi_fov):
                            region.mean_intensity,
                            np.std(region.intensity_image[region.intensity_image>0])
         ))
-        descriptors.append( covd(region.intensity_image) )
+#        descriptors.append( covd(region.intensity_image) )
 
 dateTimeObj = datetime.now() # Returns a datetime object containing the local date and time
 
@@ -103,14 +105,14 @@ if numb_of_nuclei > 0:
     np.savez(str(npz_file)+'.covd.npz',
              fov=fov,
              centroids=centroids,
-             descriptors=descriptors,
+ #            descriptors=descriptors,
              morphology=morphology)
 # else:
 #     print('There are no nuclei in row='+str(row)+' and col='+str(col)+' in file: '+str(h5_file))
 
 # Update report 
-with open(basename+'.txt', 'a+', newline='') as myfile:
-     wr = csv.writer(myfile)
-     wr.writerow([dateTimeObj,'row='+str(row),'col='+str(col),'nuclei='+str(numb_of_nuclei),'descriptors='+str(len(descriptors))])
+#with open(basename+'.txt', 'a+', newline='') as myfile:
+ #    wr = csv.writer(myfile)
+  #   wr.writerow([dateTimeObj,'row='+str(row),'col='+str(col),'nuclei='+str(numb_of_nuclei),'descriptors='+str(len(descriptors))])
      
 
