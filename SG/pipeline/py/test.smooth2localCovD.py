@@ -25,7 +25,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-# In[12]:
+# In[33]:
 
 
 def show_cluster(xyz):
@@ -36,7 +36,7 @@ def show_cluster(xyz):
         z=z,
         mode='markers',
         marker=dict(
-            size=3,
+            size=1,
             opacity=0.75
         )
     )])
@@ -56,7 +56,7 @@ def scattered_wsi(df,x,y,hue,size,opacity,auto_open,filename):
     return 
 
 
-# In[2]:
+# In[44]:
 
 
 def mm(A,times): # multiply A times-times
@@ -68,27 +68,21 @@ def mm(A,times): # multiply A times-times
     return M
 
 
-# In[3]:
+# In[41]:
 
 
-def smoothed_covd(A,df,r): # given graph and morphological data returns a descriptor averaged in a radius r
+def smoothed_covd(A,data,r): # given graph and morphological data returns a descriptor averaged in a radius r
     M = mm(A,r)
     row_idx, col_idx = M.nonzero()
-    features = ['area',
-                'perimeter',
-                'solidity',
-                'eccentricity',
-                'circularity',
-                'mean_intensity',
-                'std_intensity',
-                'cov_intensity']
-    dim = int(0.5*len(features)*(len(features)-1)+len(features))
-    descriptor = np.zeros((df.shape[0],dim))
+    dim = int(0.5*data.shape[1]*(data.shape[1]-1)+data.shape[1])
+    descriptor = np.zeros((data.shape[0],dim))
     for row_ID in range(A.shape[0]):
         mask = row_idx == row_ID # the non-zero elements idx at row rowID
-        a = M[row_ID,col_idx[mask]] # the non-zero elements entries at row rowID
-        morphology = df.iloc[col_idx[mask]][features].to_numpy() # get the morphologies of the nodes path-connected to row_ID
-        C = np.cov(morphology,rowvar=False,aweights=a.data) # the covd for row_ID weighted with paths
+        a = M[row_ID,col_idx[mask]] # the non-zero elements entries at row rowID, representing the weight of the node j morphology wrt node i
+        morphology = data[col_idx[mask],:] # get the morphologies of the nodes path-connected to row_ID
+        morphology = np.vstack((data[row_ID,:],morphology)) # add the row_ID node
+        a = np.hstack(([1],a.data)) # add the weight of the local node !!!it has to be the max of the weights!!!
+        C = np.cov(morphology,rowvar=False,aweights=a) # the covd for row_ID weighted with paths
         iu1 = np.triu_indices(C.shape[1]) # the indices of the upper triangular part
         covd2vec = C[iu1]
         descriptor[row_ID,:] = covd2vec
@@ -125,14 +119,14 @@ df_morphology = pd.DataFrame(data=morphology, columns=['area','perimeter','solid
 df = pd.concat([df_fov,df_xy, df_morphology],axis=1)
 
 
-# In[23]:
+# In[48]:
 
 
 # filter by percentiles in morphologies (hardcoded in function filtering)
 fdf = filtering(df).sample(n=10000)
 
 
-# In[24]:
+# In[49]:
 
 
 # Get the positions of centroids 
@@ -158,11 +152,21 @@ else:
     nx.write_gpickle(G, filename)
 
 
+# In[50]:
+
+
+features = ['area','perimeter',
+            'solidity','eccentricity','circularity',
+            'mean_intensity','std_intensity','cov_intensity']
+data = fdf[features].to_numpy()
+radius = 10
+data_smooth = smoothing(A,data,radius)
+
+
 # In[ ]:
 
 
-descriptor = smoothed_covd(A,fdf,100)
-descriptor.shape
+descriptor = smoothed_covd(A,data_smooth,20)
 
 
 # Once the descriptor is generated, we can represent it with UMAP
