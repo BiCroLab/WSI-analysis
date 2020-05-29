@@ -61,7 +61,7 @@ G = nx.from_scipy_sparse_matrix(A, edge_attribute='weight')
 nx.write_gpickle(G, sample+".graph.pickle")
 
 print('Smooth the morphology')
-radius = 100
+radius = 10000
 data = fdf[fdf.columns[4:]].to_numpy()
 smooth_data = smoothing(A,data,radius)
 new_fdf = pd.DataFrame(data=smooth_data,columns=fdf.columns[4:],index=fdf.index)
@@ -70,17 +70,17 @@ df = pd.concat([fdf[fdf.columns[:4]],new_fdf],axis=1)
 # Save dataframe
 df.to_pickle("id_"+str(sample)+".measurements.smoothed.r"+str(radius)+".pkl")
 
-# UMAP representation of the intensity descriptors, always check the proper column selection!
-#embedding_intensity = umap.UMAP(min_dist=0.0,n_components=3,random_state=42).fit_transform(fdf[fdf.columns[4:-8]]) 
+# # UMAP representation of the intensity descriptors, always check the proper column selection!
+# embedding = umap.UMAP(min_dist=0.0,n_components=3,random_state=42).fit_transform(df[df.columns[4:]]) 
 
-# # Create dataframes of the umap embedding
-# df_embedding_intensity = pd.DataFrame(data=embedding_intensity, columns=['xi','yi','zi'])
+# # # Create dataframes of the umap embedding
+# df_embedding = pd.DataFrame(data=embedding, columns=['xi','yi','zi'])
 
 # # Concatenate the embedded dataframes
-# fdf.reset_index(drop=True, inplace=True)
-# df_embedding_intensity.reset_index(drop=True, inplace=True)
-# df_final = pd.concat([fdf[fdf.columns[:4]], fdf[fdf.columns[-8:]], df_embedding_intensity],axis=1)
+# df.reset_index(drop=True, inplace=True)
+# df_embedding.reset_index(drop=True, inplace=True)
+# df_final = pd.concat([df, df_embedding],axis=1)
 
 # # Save dataframe
-# df_final.to_pickle("id_"+str(sample)+".measurements.covd.pkl")
+# df_final.to_pickle("id_"+str(sample)+".measurements..pkl")
 
