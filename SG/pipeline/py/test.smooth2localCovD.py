@@ -92,8 +92,8 @@ def smoothed_covd(A,data,r): # given graph and morphological data returns a desc
 # In[ ]:
 
 
-#dirname = '/home/garner1/Work/pipelines/WSI-analysis/SG/pipeline/data/id_52'  #sys.argv[1] # the directory where features.npz files are located
-dirname = '../h5/id_52/'
+dirname = '/home/garner1/Work/pipelines/WSI-analysis/SG/pipeline/data/id_52'  #sys.argv[1] # the directory where features.npz files are located
+#dirname = '../h5/id_52/'
 sample = '52' #sys.argv[2]  # the sample id
 
 counter = 0
@@ -123,7 +123,7 @@ df = pd.concat([df_fov,df_xy, df_morphology],axis=1)
 
 
 # filter by percentiles in morphologies (hardcoded in function filtering)
-fdf = filtering(df).sample(n=10000)
+fdf = filtering(df).sample(n=100000)
 
 
 # In[49]:
@@ -159,14 +159,14 @@ features = ['area','perimeter',
             'solidity','eccentricity','circularity',
             'mean_intensity','std_intensity','cov_intensity']
 data = fdf[features].to_numpy()
-radius = 10
+radius = 1000
 data_smooth = smoothing(A,data,radius)
 
 
 # In[ ]:
 
 
-descriptor = smoothed_covd(A,data_smooth,20)
+descriptor = smoothed_covd(A,data_smooth,1)
 
 
 # Once the descriptor is generated, we can represent it with UMAP
