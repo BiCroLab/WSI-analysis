@@ -142,7 +142,7 @@ table = pd.pivot_table(fdf,
                        values='field', 
                        index=['x_bin'],
                        columns=['y_bin'],
-                       aggfunc=np.median, # take the mean of the entries in the bin
+                       aggfunc=np.sum, # take the mean of the entries in the bin
                        fill_value=None)
 
 X=table.columns.values
