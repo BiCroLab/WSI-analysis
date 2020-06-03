@@ -11,6 +11,8 @@ import glob
 import h5py
 import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
 import plotly.graph_objects as go
 from plotly.graph_objs import *
 import plotly.express as px
@@ -78,16 +80,15 @@ df_morphology = pd.DataFrame(data=morphology, columns=['area','perimeter','solid
 # Concatenate all dataframes
 df = pd.concat([df_fov,df_xy, df_morphology],axis=1)
 
-
 # filter by percentiles in morphologies (hardcoded in function filtering) and introduce coeff. of var
-fdf = filtering(df).sample(n=1000)
+fdf = filtering(df) #.sample(n=10000)
 
 # Get the positions of centroids 
 pos = fdf[fdf.columns[2:4]].to_numpy()
 
 # Building the UMAP graph
 filename = '../py/'+str(sample)+'.graph.npz' # the adj sparse matrix
-if False:#path.exists(filename):
+if path.exists(filename):
     print('The graph already exists')
     A = sparse.load_npz(filename) 
 else:
@@ -96,7 +97,7 @@ else:
     sparse.save_npz(filename, A)
     
 filename = '../py/'+str(sample)+'.graph.pickle'    # the networkx obj
-if False:#path.exists(filename):    
+if path.exists(filename):    
     print('The network already exists')
     G = nx.read_gpickle(filename)
 else:
@@ -115,7 +116,15 @@ features = ['area',
 
 data = fdf[features].to_numpy()
 
-descriptor = covd_nn(A,data) # covd descriptors of the connected nodes
+filename = './ID'+str(sample)+'.descriptor.npy' 
+if path.exists(filename):
+    print('Loading the descriptor')
+    descriptor = np.load(filename)
+else:
+    print('Preparing the descriptor')
+    descriptor = covd_nn(A,data) # covd descriptors of the connected nodes
+    np.save(filename,descriptor)
+
 L = nx.laplacian_matrix(G, weight='weight') # get the Laplacian matrix
 delta_descriptor = L.dot(descriptor) # get the local differianted descriptor
 delta = norm(delta_descriptor,axis=1) # get the norm of the differential field
