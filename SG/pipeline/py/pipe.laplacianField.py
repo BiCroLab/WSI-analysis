@@ -43,9 +43,7 @@ dirname = sys.argv[1] #'../h5/id_52/' # the path to *features.npz files
 sample = sys.argv[2] #'52' #sys.argv[2]  # the sample id
 size = int(sys.argv[3]) #100000 # number of nuclei, use negative value for full set
 nn = int(sys.argv[4]) #10 # set the number of nearest neighbor in the umap-graph. Will be used in CovD as well
-
-N = 50 # number of linear bins for the contour visualization
-print('N: ',str(N))
+N = int(sys.argv[5]) # number of linear bins for the contour visualization
 
 features = ['area',
             'perimeter',
@@ -80,7 +78,7 @@ df_morphology = pd.DataFrame(data=morphology, columns=['area','perimeter','solid
 df = pd.concat([df_fov,df_xy, df_morphology],axis=1)
 
 # filter by percentiles in morphologies (hardcoded in function filtering) and introduce coeff. of var
-if size < 0:
+if size == 0:
     fdf = filtering(df) # filter out extremes in morphology
 else:
     fdf = filtering(df).sample(n=size) # filter out morphological outlyers and subsample nuclei

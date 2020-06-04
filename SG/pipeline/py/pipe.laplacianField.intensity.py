@@ -32,9 +32,7 @@ dirname = sys.argv[1] #'../h5/id_52/' # the path to *features.npz files
 sample = sys.argv[2] #'52' #sys.argv[2]  # the sample id
 size = int(sys.argv[3]) #100000 # number of nuclei, use negative value for full set
 nn = int(sys.argv[4]) #10 # set the number of nearest neighbor in the umap-graph. Will be used in CovD as well
-
-N = 25 # number of linear bins for the contour visualization
-print('N: ',str(N))
+N = int(sys.argv[5]) # number of linear bins for the contour visualization
 
 ######################################
 counter = 0
@@ -68,7 +66,7 @@ else:
 pos = fdf[fdf.columns[2:4]].to_numpy() # Get the positions of centroids 
 
 # Building the UMAP graph
-filename = '../py/ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.igraph.npz' # the adj sparse matrix
+filename = './ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.igraph.npz' # the adj sparse matrix
 if path.exists(filename):
     print('The graph already exists')
     A = sparse.load_npz(filename) 
@@ -77,7 +75,7 @@ else:
     A = space2graph(pos,nn)
     sparse.save_npz(filename, A)
     
-filename = '../py/ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.igraph.pickle'    # the networkx obj
+filename = './ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.igraph.pickle'    # the networkx obj
 if path.exists(filename):    
     print('The network already exists')
     G = nx.read_gpickle(filename)
