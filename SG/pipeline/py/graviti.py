@@ -6,6 +6,7 @@ import sys
 import umap
 import warnings
 from scipy import sparse, linalg
+from scipy.sparse import coo_matrix
 import networkx as nx
 from sklearn import preprocessing
 from sklearn.decomposition import PCA
