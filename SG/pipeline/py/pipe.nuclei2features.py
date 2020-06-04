@@ -14,7 +14,7 @@ import glob
 import math
 import h5py
 from matplotlib import pyplot as plt
-from gravity import *
+from graviti import *
 import warnings
 warnings.filterwarnings('ignore')
 
