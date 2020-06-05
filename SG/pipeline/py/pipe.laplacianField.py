@@ -28,22 +28,11 @@ from joblib import Parallel, delayed
 import warnings
 warnings.filterwarnings('ignore')
 
-def covd_local(r,A,data,row_idx,col_idx):
-    mask = row_idx == r         # find nearest neigthbors
-    cluster = np.append(r,col_idx[mask]) # define the local cluster, its size depends on the local connectivity
-    a = A[r,cluster]
-    a = np.hstack(([1],a.data))
-    d = data[cluster,:]
-    C = np.cov(d,rowvar=False,aweights=a)
-    iu1 = np.triu_indices(C.shape[1])
-    vec = C[iu1]
-    return (r,vec)
 
-dirname = sys.argv[1] #'../h5/id_52/' # the path to *features.npz files 
-sample = sys.argv[2] #'52' #sys.argv[2]  # the sample id
-size = int(sys.argv[3]) #100000 # number of nuclei, use negative value for full set
-nn = int(sys.argv[4]) #10 # set the number of nearest neighbor in the umap-graph. Will be used in CovD as well
-N = int(sys.argv[5]) # number of linear bins for the contour visualization
+sample = sys.argv[1] #'52' #sys.argv[2]  # the sample id
+size = int(sys.argv[2]) #100000 # number of nuclei, use negative value for full set
+nn = int(sys.argv[3]) #10 # set the number of nearest neighbor in the umap-graph. Will be used in CovD as well
+N = int(sys.argv[4]) # number of linear bins for the contour visualization
 
 features = ['area',
             'perimeter',
@@ -56,7 +45,7 @@ features = ['area',
 ######################################
 counter = 0
 print('Loading the masks')
-for f in glob.glob(dirname+'/*features.npz'): # for every fov
+for f in glob.glob('/home/garner1/Work/pipelines/WSI-analysis/SG/pipeline/data/id_'+str(sample)+'/*.features.npz'): # for every fov
     counter += 1
     if counter == 1:            # set up the data arrays
         data = np.load(f,allow_pickle=True)
@@ -86,7 +75,7 @@ else:
 pos = fdf[fdf.columns[2:4]].to_numpy() # Get the positions of centroids 
 
 # Building the UMAP graph
-filename = 'ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.graph.npz' # the adj sparse matrix
+filename = '/home/garner1/Work/pipelines/WSI-analysis/SG/pipeline/npz/ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.graph.npz' # the adj sparse matrix
 if path.exists(filename):
     print('The graph already exists')
     A = sparse.load_npz(filename) 
@@ -95,7 +84,7 @@ else:
     A = space2graph(pos,nn)
     sparse.save_npz(filename, A)
     
-filename = 'ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.graph.pickle'    # the networkx obj
+filename = '/home/garner1/Work/pipelines/WSI-analysis/SG/pipeline/pkl/ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.graph.pickle'    # the networkx obj
 if path.exists(filename):    
     print('The network already exists')
     G = nx.read_gpickle(filename)
@@ -107,7 +96,7 @@ else:
 data = fdf[features].to_numpy() #get the morphological data
 
 # Parallel generation of the local covd
-filename = 'ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.descriptor.pickle'    # the descriptor
+filename = '/home/garner1/Work/pipelines/WSI-analysis/SG/pipeline/pkl/ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.descriptor.pickle'    # the descriptor
 if path.exists(filename):    
     print('The descriptor already exists')
     descriptor = pickle.load( open( filename, "rb" ) )
@@ -154,7 +143,7 @@ cs = ax.contourf(Yi, Xi, Z,
                  levels=10,
                  cmap=plt.cm.viridis);
 cbar = fig.colorbar(cs)
-plt.savefig('ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.contour.png')
+plt.savefig('/home/garner1/Work/pipelines/WSI-analysis/SG/pipeline/png/ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.contour.png')
 
 
 
