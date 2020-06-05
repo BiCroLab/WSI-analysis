@@ -12,22 +12,17 @@
 # echo Calculate measurements features CovD
 # parallel "/usr/local/share/anaconda3/bin/python3.7 py/pipe.nuclei2features.py {}" ::: data/id_*/iMS*._r*_c*.h5
 
-for id in 52 57 38 53 40 17 39 13 54 41 51 56 45 46;
-do
-    /usr/local/share/anaconda3/bin/python3.7 py/pipe.laplacianField.py data/id_${id} ${id} 0 10 50
-done
+# for id in 52 57 38 53 40 17 39 13 54 41 51 56 45 46;
+# do
+#     /usr/local/share/anaconda3/bin/python3.7 py/pipe.laplacianField.py ${id} 0 10 50
+# done
 
 # echo Calculate intensity arrays Covd
 # parallel "/usr/local/share/anaconda3/bin/python3.7 py/pipe.nuclei2covd.py {}" ::: data/id_*/iMS*._r*_c*.h5
 
-# parallel "/usr/local/share/anaconda3/bin/python3.7 py/pipe.laplacianField.intensity.py data/id_{} {} 0 10 50" ::: 52 57 38 53 40 17 39 13 54 41 51 56 45 46
+# parallel "/usr/local/share/anaconda3/bin/python3.7 py/pipe.laplacianField.intensity.py {} 0 10 50" ::: 52 57 38 53 40 17 39 13 54 41 51 56 45 46
 
-# for id in 57 38 53 40 17 39 13 54 41 51 56 45 46;
-# do
-#     echo Process sample ${id}
-#     /usr/local/share/anaconda3/bin/python3.7 test.laplacianField.py ../data/id_${id} ${id} -1 30
-# done
-
+###########################################################
 # for sample in 52 57 38 53 40 17 39 13 54 41 51 56 45 46;
 # do
 #     echo Run UMAP on sample ${sample}
