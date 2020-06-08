@@ -28,18 +28,16 @@ from joblib import Parallel, delayed
 import warnings
 warnings.filterwarnings('ignore')
 
-dirname = sys.argv[1] #'../h5/id_52/' # the path to *features.npz files 
-sample = sys.argv[2] #'52' #sys.argv[2]  # the sample id
-size = int(sys.argv[3]) #100000 # number of nuclei, use negative value for full set
-nn = int(sys.argv[4]) #10 # set the number of nearest neighbor in the umap-graph. Will be used in CovD as well
-N = int(sys.argv[5]) # number of linear bins for the contour visualization
-
-print('N: ',str(N))
+sample = sys.argv[1] #'52' #sys.argv[2]  # the sample id
+size = int(sys.argv[2]) #100000 # number of nuclei, use negative value for full set
+nn = int(sys.argv[3]) #10 # set the number of nearest neighbor in the umap-graph. Will be used in CovD as well
+N = int(sys.argv[4]) # number of linear bins for the contour visualization
 
 ######################################
+
 counter = 0
 print('Loading the masks')
-for f in glob.glob(dirname+'/*.intensity-covd.npz'): # for every fov
+for f in glob.glob('/home/garner1/Work/pipelines/WSI-analysis/SG/pipeline/data/id_'+str(sample)+'/*.intensity-covd.npz'): # for every fov
     counter += 1
     if counter == 1:            # set up the data arrays
         data = np.load(f,allow_pickle=True)
@@ -68,7 +66,7 @@ else:
 pos = fdf[fdf.columns[2:4]].to_numpy() # Get the positions of centroids 
 
 # Building the UMAP graph
-filename = '../py/ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.igraph.npz' # the adj sparse matrix
+filename = '/home/garner1/Work/pipelines/WSI-analysis/SG/pipeline/npz/ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.igraph.npz' # the adj sparse matrix
 if path.exists(filename):
     print('The graph already exists')
     A = sparse.load_npz(filename) 
@@ -77,7 +75,7 @@ else:
     A = space2graph(pos,nn)
     sparse.save_npz(filename, A)
     
-filename = '../py/ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.igraph.pickle'    # the networkx obj
+filename = '/home/garner1/Work/pipelines/WSI-analysis/SG/pipeline/pkl/ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.igraph.pickle'    # the networkx obj
 if path.exists(filename):    
     print('The network already exists')
     G = nx.read_gpickle(filename)
@@ -117,7 +115,7 @@ cs = ax.contourf(Yi, Xi, Z,
                  levels=10,
                  cmap=plt.cm.viridis);
 cbar = fig.colorbar(cs)
-plt.savefig('ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.icontour.png')
+plt.savefig('/home/garner1/Work/pipelines/WSI-analysis/SG/pipeline/png/ID'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.icontour.png')
 
 
 

@@ -6,6 +6,7 @@ import sys
 import umap
 import warnings
 from scipy import sparse, linalg
+from scipy.sparse import coo_matrix
 import networkx as nx
 from sklearn import preprocessing
 from sklearn.decomposition import PCA
@@ -14,6 +15,17 @@ from sklearn.preprocessing import normalize
 import numba
 import igraph
 import pandas as pd
+
+def covd_local(r,A,data,row_idx,col_idx): # morphometric covd using the NN of each node
+    mask = row_idx == r         # find nearest neigthbors
+    cluster = np.append(r,col_idx[mask]) # define the local cluster, its size depends on the local connectivity
+    a = A[r,cluster]
+    a = np.hstack(([1],a.data))
+    d = data[cluster,:]
+    C = np.cov(d,rowvar=False,aweights=a)
+    iu1 = np.triu_indices(C.shape[1])
+    vec = C[iu1]
+    return (r,vec)
 
 def filtering(df):
     #First removing columns
