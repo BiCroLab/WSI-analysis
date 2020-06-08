@@ -27,6 +27,23 @@ def covd_local(r,A,data,row_idx,col_idx): # morphometric covd using the NN of ea
     vec = C[iu1]
     return (r,vec)
 
+def filtering_HE(df):
+    #First removing columns
+    filt_df = df[df.columns[7:]]
+    df_keep = df.drop(df.columns[7:], axis=1)
+    #Then, computing percentiles
+    low = .01
+    high = .99
+    quant_df = filt_df.quantile([low, high])
+    #Next filtering values based on computed percentiles
+    filt_df = filt_df.apply(lambda x: x[(x>quant_df.loc[low,x.name]) & 
+                                        (x < quant_df.loc[high,x.name])], axis=0)
+    #Bringing the columns back
+    filt_df = pd.concat( [df_keep,filt_df], axis=1 )
+    #rows with NaN values can be dropped simply like this
+    filt_df.dropna(inplace=True)
+    return filt_df
+
 def filtering(df):
     #First removing columns
     filt_df = df[["area","perimeter","solidity","eccentricity","circularity","mean_intensity","std_intensity"]]
