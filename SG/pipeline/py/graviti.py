@@ -11,7 +11,7 @@ import networkx as nx
 from sklearn import preprocessing
 from sklearn.decomposition import PCA
 warnings.filterwarnings('ignore')
-from sklearn.preprocessing import normalize
+from sklearn.preprocessing import normalize, scale
 import numba
 import igraph
 import pandas as pd
@@ -21,11 +21,28 @@ def covd_local(r,A,data,row_idx,col_idx): # morphometric covd using the NN of ea
     cluster = np.append(r,col_idx[mask]) # define the local cluster, its size depends on the local connectivity
     a = A[r,cluster]
     a = np.hstack(([1],a.data))
-    d = data[cluster,:]
-    C = np.cov(d,rowvar=False,aweights=a)
+    d = scale(data[cluster,:], with_mean=False) # rescale the data by std 
+    C = np.cov(d,rowvar=False,aweights=a) # after rescaling this becomes the correlation matrix and not the covariance mat
     iu1 = np.triu_indices(C.shape[1])
     vec = C[iu1]
     return (r,vec)
+
+def filtering_HE(df):
+    #First removing columns
+    filt_df = df[df.columns[7:]]
+    df_keep = df.drop(df.columns[7:], axis=1)
+    #Then, computing percentiles
+    low = .01
+    high = .99
+    quant_df = filt_df.quantile([low, high])
+    #Next filtering values based on computed percentiles
+    filt_df = filt_df.apply(lambda x: x[(x>quant_df.loc[low,x.name]) & 
+                                        (x < quant_df.loc[high,x.name])], axis=0)
+    #Bringing the columns back
+    filt_df = pd.concat( [df_keep,filt_df], axis=1 )
+    #rows with NaN values can be dropped simply like this
+    filt_df.dropna(inplace=True)
+    return filt_df
 
 def filtering(df):
     #First removing columns

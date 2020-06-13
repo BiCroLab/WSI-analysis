@@ -11,7 +11,7 @@ import networkx as nx
 from sklearn import preprocessing
 from sklearn.decomposition import PCA
 warnings.filterwarnings('ignore')
-from sklearn.preprocessing import normalize
+from sklearn.preprocessing import normalize, scale
 import numba
 import igraph
 import pandas as pd
@@ -21,8 +21,8 @@ def covd_local(r,A,data,row_idx,col_idx): # morphometric covd using the NN of ea
     cluster = np.append(r,col_idx[mask]) # define the local cluster, its size depends on the local connectivity
     a = A[r,cluster]
     a = np.hstack(([1],a.data))
-    d = data[cluster,:]
-    C = np.cov(d,rowvar=False,aweights=a)
+    d = scale(data[cluster,:], with_mean=False) # rescale the data by std 
+    C = np.cov(d,rowvar=False,aweights=a) # after rescaling this becomes the correlation matrix and not the covariance mat
     iu1 = np.triu_indices(C.shape[1])
     vec = C[iu1]
     return (r,vec)
