@@ -19,7 +19,7 @@ import pandas as pd
 def covd_local(r,A,data,row_idx,col_idx): # morphometric covd using the NN of each node
     mask = row_idx == r         # find nearest neigthbors
     cluster = np.append(r,col_idx[mask]) # define the local cluster, its size depends on the local connectivity
-    C = np.cov(data[cluster,:],rowvar=False) # after rescaling this becomes the correlation matrix and not the covariance mat
+    C = np.cov(data[cluster,:],rowvar=False)
     iu1 = np.triu_indices(C.shape[1])
     vec = C[iu1]
     return (r,vec)
