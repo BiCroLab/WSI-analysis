@@ -15,14 +15,130 @@ from sklearn.preprocessing import normalize, scale
 import numba
 import igraph
 import pandas as pd
+import plotly.graph_objects as go
+from plotly.graph_objs import *
+from numpy.linalg import norm
+from scipy.sparse import find
+import matplotlib.pyplot as plt
 
-def covd_local(r,A,data,row_idx,col_idx): # morphometric covd using the NN of each node
-    mask = row_idx == r         # find nearest neigthbors
-    cluster = np.append(r,col_idx[mask]) # define the local cluster, its size depends on the local connectivity
+def get_fov(df,row,col):
+    fdf = df[(df['fov_row']==row) & (df['fov_col']==col)]
+    pos = fdf[fdf.columns[2:4]].to_numpy() # Get the positions of centroids 
+
+    # Building the UMAP graph
+    print('Creating the graph')
+    nn = fdf.shape[0]//25 #set the number of nn
+    print('The connectivity is '+str(nn))
+    A = space2graph(pos,nn)
+    
+    print('Creating the network')
+    G = nx.from_scipy_sparse_matrix(A, edge_attribute='weight')
+    
+    #get the morphological data and rescale the data by std 
+    data = scale(fdf[features].to_numpy(), with_mean=False) 
+
+    print('Generating the descriptor')
+    num_cores = multiprocessing.cpu_count() # numb of cores
+    row_idx, col_idx, values = find(A) #A.nonzero() # nonzero entries
+    processed_list = Parallel(n_jobs=num_cores)(delayed(covd_local)(r,data,row_idx,col_idx) 
+                                                                for r in range(A.shape[0])
+                                                       )
+
+    # Construct the descriptor array
+    descriptor = np.zeros((len(processed_list),processed_list[0][1].shape[0]))
+    for r in range(len(processed_list)):
+        descriptor[r,:] = processed_list[r][1] # covd descriptors of the connected nodes
+    
+    print('Generating the field')
+    #fdf['field'] = covd_gradient(descriptor,row_idx,col_idx,values)
+    fdf['field'] = Parallel(n_jobs=num_cores)(delayed(covd_gradient_parallel)(node,descriptor,row_idx,col_idx,values) 
+                                                                for node in range(A.shape[0])
+                                                       )
+    print('Done')
+    return fdf
+
+def covd_gradient_parallel(node,descriptor,row_idx,col_idx,values):
+    mask = row_idx == node         # find nearest neigthbors
+    delta = norm(descriptor[node,:]-descriptor[col_idx[mask],:],axis=1) # broadcasting
+    delta = np.reshape(delta,(1,delta.shape[0]))
+    # if you consider graph weights in computing the diversity
+    weights = values[mask]
+    gradient = np.dot(delta,weights)
+    
+    # if you do not consider graph weights in computing the diversity
+    #gradient = sum(delta) 
+    return gradient[0]
+
+def covd_gradient(descriptor,row_idx,col_idx,values):
+    global_gradient = []
+    for node in range(descriptor.shape[0]):
+        print(node)
+        mask = row_idx == node         # find nearest neigthbors
+        reference = np.repeat([descriptor[node,:]], sum(mask), axis=0)
+        delta = norm(reference-descriptor[col_idx[mask],:],axis=1)
+        delta = np.reshape(delta,(1,delta.shape[0]))
+        weights = values[mask]
+        gradient = np.dot(delta,weights)
+        global_gradient.append(gradient)
+    return global_gradient
+
+# Plotly contour visualization
+def plotlyContourPlot(fdf,filename):
+    # define the pivot tabel for the contour plot
+    table = pd.pivot_table(fdf, 
+                           values='field', 
+                           index=['x_bin'],
+                           columns=['y_bin'],
+                           aggfunc=np.sum, # take the mean of the entries in the bin
+                           fill_value=None)
+    
+    fig = go.Figure(data=[go.Surface(z=table.values,
+                                     x=table.columns.values, 
+                                     y=table.index.values,
+                                     colorscale='Jet')])
+    fig.update_traces(contours_z=dict(show=True, usecolormap=True,
+                                  highlightcolor="limegreen", project_z=True))
+    fig.update_layout(title=filename, autosize=True,
+                      scene_camera_eye=dict(x=1.87, y=0.88, z=-0.64),
+                      width=1000, height=1000,
+                      margin=dict(l=65, r=50, b=65, t=90)
+                    )
+    fig.show()
+    return
+
+def contourPlot(fdf,N,aggfunc,filename):
+    # Contour visualization
+    fdf['x_bin'] = pd.cut(fdf['cx'], N, labels=False) # define the x bin label
+    fdf['y_bin'] = pd.cut(fdf['cy'], N, labels=False) # define the y bin label
+
+    # define the pivot tabel for the contour plot
+    table = pd.pivot_table(fdf, 
+                           values='diversity', 
+                           index=['x_bin'],
+                           columns=['y_bin'],
+                           aggfunc=aggfunc, # take the mean of the entries in the bin
+                           fill_value=None)
+
+    X=table.columns.values
+    Y=table.index.values
+    Z=table.values
+    Xi,Yi = np.meshgrid(X, Y)
+
+    fig, ax = plt.subplots(figsize=(10,10))
+    cs = ax.contourf(Yi, Xi, Z, 
+                     alpha=1.0, 
+                     levels=5,
+                     cmap=plt.cm.viridis);
+    cbar = fig.colorbar(cs)
+    plt.savefig('./'+filename+'.contour.png')
+
+def covd_parallel(node,data,row_idx,col_idx):
+    mask = row_idx == node         # find nearest neigthbors
+    cluster = np.append(node,col_idx[mask]) # define the local cluster, its size depends on the local connectivity
     C = np.cov(data[cluster,:],rowvar=False)
     iu1 = np.triu_indices(C.shape[1])
     vec = C[iu1]
-    return (r,vec)
+    return (node,vec)
 
 def filtering_HE(df):
     #First removing columns
