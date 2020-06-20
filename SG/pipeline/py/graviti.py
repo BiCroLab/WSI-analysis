@@ -140,6 +140,12 @@ def covd_parallel(node,data,row_idx,col_idx):
     vec = C[iu1]
     return (node,vec)
 
+def covd_parallel_sparse(node,data,nn_idx):
+    C = np.cov(data[nn_idx[node,:],:],rowvar=False)
+    iu1 = np.triu_indices(C.shape[1])
+    vec = C[iu1]
+    return (node,vec)
+
 def filtering_HE(df):
     #First removing columns
     filt_df = df[df.columns[7:]]
