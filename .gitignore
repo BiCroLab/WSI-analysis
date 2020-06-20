@@ -13,4 +13,5 @@ __*
 test_*
 *.pickle
 *.raw
+*.pkl
 *.euler
