@@ -21,6 +21,56 @@ from numpy.linalg import norm
 from scipy.sparse import find
 import matplotlib.pyplot as plt
 
+# Plotly contour visualization
+def plotlyContourPlot(fdf,filename):
+    # define the pivot tabel for the contour plot
+    table = pd.pivot_table(fdf, 
+                           values='field', 
+                           index=['x_bin'],
+                           columns=['y_bin'],
+                           aggfunc=np.sum, # take the mean of the entries in the bin
+                           fill_value=None)
+    
+    fig = go.Figure(data=[go.Surface(z=table.values,
+                                     x=table.columns.values, 
+                                     y=table.index.values,
+                                     colorscale='Jet')])
+    fig.update_traces(contours_z=dict(show=True, usecolormap=True,
+                                  highlightcolor="limegreen", project_z=True))
+    fig.update_layout(title=filename, autosize=True,
+                      scene_camera_eye=dict(x=1.87, y=0.88, z=-0.64),
+                      width=1000, height=1000,
+                      margin=dict(l=65, r=50, b=65, t=90)
+                    )
+    fig.show()
+    return
+
+def contourPlot(fdf,N,aggfunc,filename):
+    # Contour visualization
+    fdf['x_bin'] = pd.cut(fdf['cx'], N, labels=False) # define the x bin label
+    fdf['y_bin'] = pd.cut(fdf['cy'], N, labels=False) # define the y bin label
+
+    # define the pivot tabel for the contour plot
+    table = pd.pivot_table(fdf, 
+                           values='diversity', 
+                           index=['x_bin'],
+                           columns=['y_bin'],
+                           aggfunc=aggfunc, # take the mean of the entries in the bin
+                           fill_value=None)
+
+    X=table.columns.values
+    Y=table.index.values
+    Z=table.values
+    Xi,Yi = np.meshgrid(X, Y)
+
+    fig, ax = plt.subplots(figsize=(10,10))
+    cs = ax.contourf(Yi, Xi, Z, 
+                     alpha=1.0, 
+                     levels=5,
+                     cmap=plt.cm.viridis);
+    cbar = fig.colorbar(cs)
+    plt.savefig('./'+filename+'.contour.png')
+
 def get_fov(df,row,col):
     fdf = df[(df['fov_row']==row) & (df['fov_col']==col)]
     pos = fdf[fdf.columns[2:4]].to_numpy() # Get the positions of centroids 
@@ -82,61 +132,13 @@ def covd_gradient(descriptor,row_idx,col_idx,values):
         global_gradient.append(gradient)
     return global_gradient
 
-# Plotly contour visualization
-def plotlyContourPlot(fdf,filename):
-    # define the pivot tabel for the contour plot
-    table = pd.pivot_table(fdf, 
-                           values='field', 
-                           index=['x_bin'],
-                           columns=['y_bin'],
-                           aggfunc=np.sum, # take the mean of the entries in the bin
-                           fill_value=None)
-    
-    fig = go.Figure(data=[go.Surface(z=table.values,
-                                     x=table.columns.values, 
-                                     y=table.index.values,
-                                     colorscale='Jet')])
-    fig.update_traces(contours_z=dict(show=True, usecolormap=True,
-                                  highlightcolor="limegreen", project_z=True))
-    fig.update_layout(title=filename, autosize=True,
-                      scene_camera_eye=dict(x=1.87, y=0.88, z=-0.64),
-                      width=1000, height=1000,
-                      margin=dict(l=65, r=50, b=65, t=90)
-                    )
-    fig.show()
-    return
 
-def contourPlot(fdf,N,aggfunc,filename):
-    # Contour visualization
-    fdf['x_bin'] = pd.cut(fdf['cx'], N, labels=False) # define the x bin label
-    fdf['y_bin'] = pd.cut(fdf['cy'], N, labels=False) # define the y bin label
-
-    # define the pivot tabel for the contour plot
-    table = pd.pivot_table(fdf, 
-                           values='diversity', 
-                           index=['x_bin'],
-                           columns=['y_bin'],
-                           aggfunc=aggfunc, # take the mean of the entries in the bin
-                           fill_value=None)
-
-    X=table.columns.values
-    Y=table.index.values
-    Z=table.values
-    Xi,Yi = np.meshgrid(X, Y)
-
-    fig, ax = plt.subplots(figsize=(10,10))
-    cs = ax.contourf(Yi, Xi, Z, 
-                     alpha=1.0, 
-                     levels=5,
-                     cmap=plt.cm.viridis);
-    cbar = fig.colorbar(cs)
-    plt.savefig('./'+filename+'.contour.png')
-
-def covd_parallel(node,data,row_idx,col_idx):
+def covd_parallel(node,data,row_idx,col_idx): # returns the vec of the logarithm of the cov matrix
     mask = row_idx == node         # find nearest neigthbors
     cluster = np.append(node,col_idx[mask]) # define the local cluster, its size depends on the local connectivity
     C = np.cov(data[cluster,:],rowvar=False)
-    iu1 = np.triu_indices(C.shape[1])
+    L = linalg.logm(C) 
+    iu1 = np.triu_indices(L.shape[1])
     vec = C[iu1]
     return (node,vec)
 
