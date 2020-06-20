@@ -139,7 +139,7 @@ def covd_parallel(node,data,row_idx,col_idx): # returns the vec of the logarithm
     C = np.cov(data[cluster,:],rowvar=False)
     L = linalg.logm(C) 
     iu1 = np.triu_indices(L.shape[1])
-    vec = C[iu1]
+    vec = L[iu1]
     return (node,vec)
 
 def covd_parallel_sparse(node,data,nn_idx):
