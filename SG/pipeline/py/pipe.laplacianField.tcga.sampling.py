@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
-
-
 import sys  
 sys.path.insert(0, '../py')
 from graviti import *
@@ -41,19 +38,12 @@ from tqdm import tqdm
 import warnings
 warnings.filterwarnings('ignore')
 
-
-# In[ ]:
-
-
-size = 100000 # number of nuclei, use 0 value for full set
+size = 500000 # number of nuclei, use 0 value for full set
 nn = 10 # set the number of nearest neighbor in the umap-graph. Will be used in CovD as well
 
 
-# In[ ]:
-
-
-#for file in glob.glob('/media/garner1/hdd2/tcga.detection/*.gz'):
-for file in glob.glob('../data/tcga.detection/*.gz')[:1]:
+for file in glob.glob('/media/garner1/hdd2/tcga.detection/*.gz'):
+#for file in glob.glob('../data/tcga.detection/*.gz')[:1]:
     
     sample = os.path.basename(file).split(sep='.')[0]; print(sample)
     
@@ -111,28 +101,4 @@ for file in glob.glob('../data/tcga.detection/*.gz')[:1]:
     N = 100
     filename = './'+str(sample)+'.size'+str(size)+'.graphNN'+str(nn)+'.covdNN'+str(n_neighbors)+'.bin'+str(N)+'.contour.tcga.sum.png'
     contourPlot(fdf,N,np.sum,filename)
-
-
-# In[ ]:
-
-
-N = 10
-fdf['x_bin'] = pd.cut(fdf['cx'], 2*N, labels=False) # define the x bin label
-fdf['y_bin'] = pd.cut(fdf['cy'], N, labels=False) # define the y bin label
-
-table = pd.pivot_table(fdf,
-                       values='diversity',
-                       index=['x_bin'],
-                       columns=['y_bin'],
-                       aggfunc=np.sum, # take the mean of the entries in the bin
-                       fill_value=None
-                      )
-import numpy as np
-from skimage.io import imsave, imread
-
-image = np.array(np.nan_to_num(table.to_numpy()), dtype=np.uint8)
-
-imsave("test.png", image)
-print("image shape")
-print(image.shape)
 
