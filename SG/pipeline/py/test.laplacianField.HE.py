@@ -113,7 +113,7 @@ for file in glob.glob('/media/garner1/hdd2/tcga.detection/*.svs.Detections.txt.g
         descriptor = np.zeros((len(processed_list),processed_list[0][1].shape[0]))
         for r in range(len(processed_list)):
             descriptor[r,:] = processed_list[r][1] # covd descriptors of the connected nodes
-        pickle.dump( descriptor, open( filename, "wb" ) )
+        pickle.dump( descriptor, open( filename, "wb" ), protocol=4 )
 
     
     print('Generating the diversity index')
@@ -122,7 +122,7 @@ for file in glob.glob('/media/garner1/hdd2/tcga.detection/*.svs.Detections.txt.g
                                                                           row_idx,col_idx,values) 
                                for node in tqdm(range(data.shape[0])))
     filename = '../pkl/'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.with_DiversityIndex.HE.pickle'
-    fdf.to_pickle(filename)
+    fdf.to_pickle(filename, protocol=4)
     #Show contour plot
     N = 100
     filename = './'+str(sample)+'.size'+str(size)+'.nn'+str(nn)+'.bin'+str(N)+'.contour.HE.sum.png'
