@@ -107,6 +107,15 @@ def get_fov(df,row,col):
     print('Done')
     return fdf
 
+def edge_diversity_parallel(node,neightbors,diversity,fdf):
+    edge = []
+    node_arr = fdf.iloc[[node]][['cx','cy']].to_numpy()
+    nn_arr = fdf.iloc[neightbors][['cx','cy']].to_numpy()
+    centroid = 0.5*(node_arr+nn_arr)
+    array = np.hstack((centroid,diversity.reshape((diversity.shape[0],1))))
+    edge.extend(array.tolist())
+    return edge
+
 def covd_gradient_parallel(node,descriptor,row_idx,col_idx,values):
     mask = row_idx == node         # find nearest neigthbors
     delta = norm(descriptor[node,:]-descriptor[col_idx[mask],:],axis=1) # broadcasting to get change at edges
