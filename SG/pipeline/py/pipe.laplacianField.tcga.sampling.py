@@ -38,7 +38,7 @@ from tqdm import tqdm
 import warnings
 warnings.filterwarnings('ignore')
 
-size = 500000 # number of nuclei, use 0 value for full set
+size = 100000 # number of nuclei, use 0 value for full set
 nn = 10 # set the number of nearest neighbor in the umap-graph. Will be used in CovD as well
 
 
