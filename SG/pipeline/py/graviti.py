@@ -109,15 +109,14 @@ def get_fov(df,row,col):
 
 def covd_gradient_parallel(node,descriptor,row_idx,col_idx,values):
     mask = row_idx == node         # find nearest neigthbors
-    delta = norm(descriptor[node,:]-descriptor[col_idx[mask],:],axis=1) # broadcasting
+    delta = norm(descriptor[node,:]-descriptor[col_idx[mask],:],axis=1) # broadcasting to get change at edges
     delta = np.reshape(delta,(1,delta.shape[0]))
     # if you consider graph weights in computing the diversity
     weights = values[mask]
-    gradient = np.dot(delta,weights)
     
     # if you do not consider graph weights in computing the diversity
     #gradient = sum(delta) 
-    return gradient[0]
+    return (node, col_idx[mask], np.multiply(delta,weights)[0])
 
 def covd_gradient(descriptor,row_idx,col_idx,values):
     global_gradient = []
