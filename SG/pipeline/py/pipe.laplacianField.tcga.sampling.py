@@ -34,11 +34,13 @@ import multiprocessing
 from joblib import Parallel, delayed
 from datetime import datetime
 from tqdm import tqdm
+from sklearn.neighbors import KDTree
+from sklearn.neighbors import NearestNeighbors
 
 import warnings
 warnings.filterwarnings('ignore')
 
-size = 500000 # number of nuclei, use 0 value for full set
+size = 100000 # number of nuclei, use 0 value for full set
 nn = 10 # set the number of nearest neighbor in the umap-graph. Will be used in CovD as well
 
 
@@ -66,8 +68,6 @@ for file in glob.glob('/media/garner1/hdd2/tcga.detection/*.gz'):
     A = space2graph(pos,nn)
     
     print('Generation of the nn of the sampled nodes')
-    from sklearn.neighbors import KDTree
-    from sklearn.neighbors import NearestNeighbors
     X = df[centroids].to_numpy() # the full array of position
     n_neighbors = df.shape[0]//size + 10
     nbrs = NearestNeighbors(n_neighbors=n_neighbors, algorithm='kd_tree',n_jobs=-1).fit(X) 
@@ -90,13 +90,23 @@ for file in glob.glob('/media/garner1/hdd2/tcga.detection/*.gz'):
         
     # Get info about the graph
     row_idx, col_idx, values = find(A) #A.nonzero() # nonzero entries
-    print('Generating the diversity index')
-    fdf['diversity'] = Parallel(n_jobs=num_cores)(delayed(covd_gradient_parallel)(node,
+    print('Generating the node diversity index')
+    node_nn_diversity = Parallel(n_jobs=num_cores)(delayed(covd_gradient_parallel)(node,
                                                                           descriptor,
                                                                           row_idx,col_idx,values) 
                                for node in tqdm(range(descriptor.shape[0])))
-    filename = './'+str(sample)+'.size'+str(size)+'.graphNN'+str(nn)+'.covdNN'+str(n_neighbors)+'.tcga.pkl'
+    fdf['diversity'] = [sum(node_nn_diversity[node][2]) for node in range(descriptor.shape[0])]
+    filename = './'+str(sample)+'.size'+str(size)+'.graphNN'+str(nn)+'.covdNN'+str(n_neighbors)+'.node_diversity.tcga.pkl'
     fdf.to_pickle(filename)
+
+    print('Generating the edge diversity index')
+    edges_list = Parallel(n_jobs=num_cores)(delayed(edge_diversity_parallel)(node,neightbors,diversity,fdf) 
+                               for (node, neightbors, diversity) in tqdm(node_nn_diversity))
+    edge_list = [item for sublist in edges_list for item in sublist]
+    edge_df = pd.DataFrame(edge_list, columns=["cx", "cy","diversity"]) 
+    filename = './'+str(sample)+'.size'+str(size)+'.graphNN'+str(nn)+'.covdNN'+str(n_neighbors)+'.edge_diversity.tcga.pkl'
+    edge_df.to_pickle(filename)
+    
     #Show contour plot
     N = 100
     filename = './'+str(sample)+'.size'+str(size)+'.graphNN'+str(nn)+'.covdNN'+str(n_neighbors)+'.bin'+str(N)+'.contour.tcga.sum.png'
