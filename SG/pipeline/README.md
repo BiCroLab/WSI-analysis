@@ -19,4 +19,6 @@ We use the Log-Euclidean distance of the covariance descriptors
 to quantify morphological heterogeneity between the connected nodes i and j. We weight this measure of purely morphological hetergeneity with the spatial information provided by w<sub>ij</sub>, the edge weight on the topological graph (providing a normalized measure of local spatial proximity).
 
 ## Node heterogeneity metric
-The node heterogeneity is defined as the sum over all the node's edge heterogeneity. It is an isotropic measure of morphological heterogeneity at a given spatial location. 
+The node heterogeneity is defined as the sum over all the node's edge heterogeneity:
+<img src="https://render.githubusercontent.com/render/math?math=\sum_j \| Log(C_i)-Log(C_j) \|_2">. 
+It is an isotropic measure of morphological heterogeneity at a given spatial location. 
