@@ -16,9 +16,9 @@ Given the morphological descriptor of each node/nucleus in the graph, we can eva
 The space of covariance descriptors can be endowed with different metrics, each with their specific advantages and disadvantages (both in terms of invariance with respect to specific operations and computational efficiency). 
 We use the Log-Euclidean distance of the covariance descriptors 
 
-<img src="https://render.githubusercontent.com/render/math?math=h^{edge}_{ij}=\| Log(C_i)-Log(C_j) \|_2">
+<img src="https://render.githubusercontent.com/render/math?math=h^{edge}_{ij}=w_{ij}\| Log(C_i)-Log(C_j) \|_2">
 
-to quantify morphological heterogeneity between the connected nodes i and j. We weight this measure of purely morphological hetergeneity with the spatial information provided by w<sub>ij</sub>, the edge weight on the topological graph (providing a normalized measure of local spatial proximity).
+to quantify morphological heterogeneity between the connected nodes i and j we weight the purely morphological distance with the spatial proximity provided by w<sub>ij</sub>, the edge weight on the topological graph.
 
 The heterogeneity at node i is defined as the weighted sum over all incident edges heterogeneities:
 
