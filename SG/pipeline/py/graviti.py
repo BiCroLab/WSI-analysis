@@ -47,7 +47,8 @@ def plotlyContourPlot(fdf,filename):
 
 def contourPlot(fdf,N,aggfunc,filename):
     # Contour visualization
-    fdf['x_bin'] = pd.cut(fdf['cx'], N, labels=False) # define the x bin label
+    ratio = fdf.max()[0]//fdf.max()[1]
+    fdf['x_bin'] = pd.cut(fdf['cx'], ratio*N, labels=False) # define the x bin label
     fdf['y_bin'] = pd.cut(fdf['cy'], N, labels=False) # define the y bin label
 
     # define the pivot tabel for the contour plot
@@ -63,10 +64,10 @@ def contourPlot(fdf,N,aggfunc,filename):
     Z=table.values
     Xi,Yi = np.meshgrid(X, Y)
 
-    fig, ax = plt.subplots(figsize=(10,10))
+    fig, ax = plt.subplots(figsize=(ratio*10,10))
     cs = ax.contourf(Yi, Xi, Z, 
                      alpha=1.0, 
-                     levels=5,
+                     levels=10,
                      cmap=plt.cm.viridis);
     cbar = fig.colorbar(cs)
     plt.savefig('./'+filename+'.contour.png')
