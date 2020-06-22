@@ -15,9 +15,13 @@ To each node i of the graph is associated a morphological descriptor C<sub>i</su
 Given the morphological descriptor of each node/nucleus in the graph, we can evaluate the morphological dissimilarity between any pairs of nodes, taking into account all the features that have been measured. 
 The space of covariance descriptors can be endowed with different metrics, each with their specific advantages and disadvantages (both in terms of invariance with respect to specific operations and computational efficiency). 
 We use the Log-Euclidean distance of the covariance descriptors 
+
 <img src="https://render.githubusercontent.com/render/math?math=h^{edge}_{ij}=\| Log(C_i)-Log(C_j) \|_2">
+
 to quantify morphological heterogeneity between the connected nodes i and j. We weight this measure of purely morphological hetergeneity with the spatial information provided by w<sub>ij</sub>, the edge weight on the topological graph (providing a normalized measure of local spatial proximity).
 
 The heterogeneity at node i is defined as the sum over all incident edges heterogeneities:
+
 <img src="https://render.githubusercontent.com/render/math?math=h^{node}_{i}=\sum_j \| Log(C_i)-Log(C_j) \|_2">. 
+
 It is an isotropic measure of morphological heterogeneity at a given spatial location. 
