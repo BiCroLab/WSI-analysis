@@ -44,7 +44,7 @@ size = 100000 # number of nuclei, use 0 value for full set
 nn = 10 # set the number of nearest neighbor in the umap-graph. Will be used in CovD as well
 
 
-for file in glob.glob('/media/garner1/hdd2/tcga.detection/*.gz'):
+for file in glob.glob('/media/garner1/hdd2/tcga.detection/*.gz')[1:]:
 #for file in glob.glob('../data/tcga.detection/*.gz')[:1]:
     
     sample = os.path.basename(file).split(sep='.')[0]; print(sample)
@@ -108,7 +108,7 @@ for file in glob.glob('/media/garner1/hdd2/tcga.detection/*.gz'):
     edge_df.to_pickle(filename)
     
     #Show contour plot
-    N = 100
-    filename = './'+str(sample)+'.size'+str(size)+'.graphNN'+str(nn)+'.covdNN'+str(n_neighbors)+'.bin'+str(N)+'.contour.tcga.sum.png'
-    contourPlot(fdf,N,np.sum,filename)
+    # N = 100
+    # filename = './'+str(sample)+'.size'+str(size)+'.graphNN'+str(nn)+'.covdNN'+str(n_neighbors)+'.bin'+str(N)+'.contour.tcga.sum.png'
+    # contourPlot(fdf,N,np.sum,filename)
 
