@@ -69,6 +69,7 @@ def contourPlot(fdf,N,aggfunc,filename):
                      alpha=1.0, 
                      levels=10,
                      cmap=plt.cm.viridis);
+    ax.invert_yaxis()
     cbar = fig.colorbar(cs)
     plt.savefig('./'+filename+'.contour.png')
     plt.close()
