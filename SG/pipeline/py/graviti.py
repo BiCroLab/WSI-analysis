@@ -47,8 +47,8 @@ def plotlyContourPlot(fdf,filename):
 
 def contourPlot(fdf,N,aggfunc,filename):
     # Contour visualization
-    ratio = fdf.max()[0]//fdf.max()[1]
-    fdf['x_bin'] = pd.cut(fdf['cx'], ratio*N, labels=False) # define the x bin label
+    ratio = fdf.max()[0]//fdf.max()[1] # ratio of max x and y centroids coordinates
+    fdf['x_bin'] = pd.cut(fdf['cx'], int(ratio*N), labels=False) # define the x bin label
     fdf['y_bin'] = pd.cut(fdf['cy'], N, labels=False) # define the y bin label
 
     # define the pivot tabel for the contour plot
