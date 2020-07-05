@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[4]:
-
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -45,25 +42,26 @@ def plot_lognormal(df,title):
 
 # In[2]:
 
-
-for file in glob.glob('/home/garner1/wsi-data/heterogeneity_data/*.edge_diversity.tcga.pkl'):
-    edges = pd.read_pickle(file)
-    base=os.path.basename(file)
+for filename in glob.glob('/home/garner1/Work/pipelines/WSI-analysis/SG/pipeline/pkl/*.edge_diversity.tcga.pkl'):
+    print(filename)
+    edges = pd.read_pickle(filename)
+    base=os.path.basename(filename)
     for count in range(3):
         base = os.path.splitext(base)[0]
     plot_loglog(edges,base)
     N = 200
-    contourPlot(edges[edges["diversity"]<20],N,np.median,base)
+#    contourPlot(edges[edges["diversity"]<20],N,np.median,base)
 
 
 # In[5]:
 
 
-for file in glob.glob('/home/garner1/wsi-data/heterogeneity_data/*.node_diversity.tcga.pkl'):
-    base=os.path.basename(file)
+for filename in glob.glob('/home/garner1/Work/pipelines/WSI-analysis/SG/pipeline/pkl/*.node_diversity.tcga.pkl'):
+    print(filename)
+    base=os.path.basename(filename)
     for count in range(3):
         base = os.path.splitext(base)[0]
-    nodes = pd.read_pickle(file)
+    nodes = pd.read_pickle(filename)
     plot_lognormal(nodes,base)
 
 
