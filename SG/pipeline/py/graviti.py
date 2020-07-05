@@ -71,7 +71,8 @@ def contourPlot(fdf,N,aggfunc,filename):
                      cmap=plt.cm.viridis);
     cbar = fig.colorbar(cs)
     plt.savefig('./'+filename+'.contour.png')
-
+    plt.close()
+    
 def get_fov(df,row,col):
     fdf = df[(df['fov_row']==row) & (df['fov_col']==col)]
     pos = fdf[fdf.columns[2:4]].to_numpy() # Get the positions of centroids 
