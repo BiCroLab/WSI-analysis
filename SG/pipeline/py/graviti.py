@@ -47,7 +47,7 @@ def plotlyContourPlot(fdf,filename):
 
 def contourPlot(fdf,N,aggfunc,filename):
     # Contour visualization
-    ratio = fdf.max()[0]//fdf.max()[1] # ratio of max x and y centroids coordinates
+    ratio = 1+fdf.max()[0]//fdf.max()[1] # ratio of max x and y centroids coordinates
     fdf['x_bin'] = pd.cut(fdf['cx'], int(ratio*N), labels=False) # define the x bin label
     fdf['y_bin'] = pd.cut(fdf['cy'], N, labels=False) # define the y bin label
 
@@ -56,7 +56,7 @@ def contourPlot(fdf,N,aggfunc,filename):
                            values='diversity', 
                            index=['x_bin'],
                            columns=['y_bin'],
-                           aggfunc=aggfunc, # take the mean of the entries in the bin
+                           aggfunc=aggfunc, # take the mean or another function of the entries in the bin
                            fill_value=None)
 
     X=table.columns.values
