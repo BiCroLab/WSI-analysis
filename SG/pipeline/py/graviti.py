@@ -21,6 +21,38 @@ from numpy.linalg import norm
 from scipy.sparse import find
 import matplotlib.pyplot as plt
 
+# Show the log-log plot of the edge heterogeneity
+def plot_loglog(df,title):
+    values, bins = np.histogram(df['diversity'],bins=1000)
+    y = values
+    x = [0.5*(bins[i]+bins[i+1]) for i in range(len(bins)-1)]
+
+    plt.loglog(x, y,'r.')
+    plt.xlabel("edge heterogeneity", fontsize=14)
+    plt.ylabel("counts", fontsize=14)
+    plt.title(title)
+    plt.savefig(title+'.edgeH.loglog.png')
+    plt.close()
+    #plt.show()
+    return
+
+# Show the lognormal distribution of the node heterogeneity
+def plot_lognormal(df,title):
+    values, bins = np.histogram(np.log2(df['diversity']),bins=100) # take the hist of the log values
+    y = values
+    x = [0.5*(bins[i]+bins[i+1]) for i in range(len(bins)-1)]
+
+    plt.plot(x, y,'r.')
+    plt.xscale('linear')
+    plt.yscale('linear')
+    plt.xlabel("Log_2 node heterogeneity", fontsize=14)
+    plt.ylabel("counts", fontsize=14)
+    plt.title(title)
+    plt.savefig(title+'.nodeH.lognorm.png')
+    plt.close()
+    #plt.show()
+    return
+
 # Plotly contour visualization
 def plotlyContourPlot(fdf,filename):
     # define the pivot tabel for the contour plot
@@ -47,8 +79,9 @@ def plotlyContourPlot(fdf,filename):
 
 def contourPlot(fdf,N,aggfunc,filename):
     # Contour visualization
-    ratio = 1+fdf.max()[0]//fdf.max()[1] # ratio of max x and y centroids coordinates
-    fdf['x_bin'] = pd.cut(fdf['cx'], int(ratio*N), labels=False) # define the x bin label
+    ratio = fdf.max()[0]/fdf.max()[1] # ratio of max x and y centroids coordinates
+    Nx = int(round(ratio*N))
+    fdf['x_bin'] = pd.cut(fdf['cx'], Nx, labels=False) # define the x bin label
     fdf['y_bin'] = pd.cut(fdf['cy'], N, labels=False) # define the y bin label
 
     # define the pivot tabel for the contour plot
