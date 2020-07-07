@@ -40,18 +40,18 @@ from sklearn.neighbors import NearestNeighbors
 import warnings
 warnings.filterwarnings('ignore')
 
-size = 100000 # number of nuclei, use 0 value for full set
+size = 1000 # number of nuclei, use 0 value for full set
 nn = 10 # set the number of nearest neighbor in the umap-graph. Will be used in CovD as well
 
 
-for file in glob.glob('/media/garner1/hdd2/tcga.detection/*.gz')[1:]:
-#for file in glob.glob('../data/tcga.detection/*.gz')[:1]:
+#for file in glob.glob('/media/garner1/hdd2/tcga.detection/*.gz'):
+for file in glob.glob('../data/tcga.detection/*.gz')[:1]:
     
     sample = os.path.basename(file).split(sep='.')[0]; print(sample)
     
     print('Loading the data')
-#    df = pd.read_csv(file,sep='\t').head(n=1000000)
-    df = pd.read_csv(file,sep='\t')
+    df = pd.read_csv(file,sep='\t').head(n=10000)
+#    df = pd.read_csv(file,sep='\t')
 
     features = df.columns[7:]
     centroids = df.columns[5:7]
@@ -91,9 +91,7 @@ for file in glob.glob('/media/garner1/hdd2/tcga.detection/*.gz')[1:]:
     # Get info about the graph
     row_idx, col_idx, values = find(A) #A.nonzero() # nonzero entries
     print('Generating the node diversity index')
-    node_nn_diversity = Parallel(n_jobs=num_cores)(delayed(covd_gradient_parallel)(node,
-                                                                          descriptor,
-                                                                          row_idx,col_idx,values) 
+    node_nn_diversity = Parallel(n_jobs=num_cores)(delayed(covd_gradient_parallel)(node,descriptor,row_idx,col_idx,values) 
                                for node in tqdm(range(descriptor.shape[0])))
     fdf['diversity'] = [sum(node_nn_diversity[node][2]) for node in range(descriptor.shape[0])]
     filename = './'+str(sample)+'.size'+str(size)+'.graphNN'+str(nn)+'.covdNN'+str(n_neighbors)+'.node_diversity.tcga.pkl'
