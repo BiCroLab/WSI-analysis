@@ -106,7 +106,7 @@ for file in glob.glob('../data/tcga.detection/*.gz')[:1]:
     edge_df.to_pickle(filename)
     
     #Show contour plot
-    N = 100
-    filename = './'+str(sample)+'.size'+str(size)+'.graphNN'+str(nn)+'.covdNN'+str(n_neighbors)+'.bin'+str(N)+'.contour.tcga.sum.png'
-    contourPlot(fdf,N,np.sum,filename)
+    # N = 100
+    # filename = './'+str(sample)+'.size'+str(size)+'.graphNN'+str(nn)+'.covdNN'+str(n_neighbors)+'.bin'+str(N)+'.contour.tcga.sum.png'
+    # contourPlot(fdf,N,np.sum,filename)
 

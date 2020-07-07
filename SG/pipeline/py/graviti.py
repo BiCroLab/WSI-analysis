@@ -21,6 +21,38 @@ from numpy.linalg import norm
 from scipy.sparse import find
 import matplotlib.pyplot as plt
 
+# Show the log-log plot of the edge heterogeneity
+def plot_loglog(df,title):
+    values, bins = np.histogram(df['diversity'],bins=1000)
+    y = values
+    x = [0.5*(bins[i]+bins[i+1]) for i in range(len(bins)-1)]
+
+    plt.loglog(x, y,'r.')
+    plt.xlabel("edge heterogeneity", fontsize=14)
+    plt.ylabel("counts", fontsize=14)
+    plt.title(title)
+    plt.savefig(title+'.edgeH.loglog.png')
+    plt.close()
+    #plt.show()
+    return
+
+# Show the lognormal distribution of the node heterogeneity
+def plot_lognormal(df,title):
+    values, bins = np.histogram(np.log2(df['diversity']),bins=100) # take the hist of the log values
+    y = values
+    x = [0.5*(bins[i]+bins[i+1]) for i in range(len(bins)-1)]
+
+    plt.plot(x, y,'r.')
+    plt.xscale('linear')
+    plt.yscale('linear')
+    plt.xlabel("Log_2 node heterogeneity", fontsize=14)
+    plt.ylabel("counts", fontsize=14)
+    plt.title(title)
+    plt.savefig(title+'.nodeH.lognorm.png')
+    plt.close()
+    #plt.show()
+    return
+
 # Plotly contour visualization
 def plotlyContourPlot(fdf,filename):
     # define the pivot tabel for the contour plot
@@ -47,8 +79,9 @@ def plotlyContourPlot(fdf,filename):
 
 def contourPlot(fdf,N,aggfunc,filename):
     # Contour visualization
-    ratio = fdf.max()[0]//fdf.max()[1]
-    fdf['x_bin'] = pd.cut(fdf['cx'], ratio*N, labels=False) # define the x bin label
+    ratio = fdf.max()[0]/fdf.max()[1] # ratio of max x and y centroids coordinates
+    Nx = int(round(ratio*N))
+    fdf['x_bin'] = pd.cut(fdf['cx'], Nx, labels=False) # define the x bin label
     fdf['y_bin'] = pd.cut(fdf['cy'], N, labels=False) # define the y bin label
 
     # define the pivot tabel for the contour plot
@@ -56,7 +89,7 @@ def contourPlot(fdf,N,aggfunc,filename):
                            values='diversity', 
                            index=['x_bin'],
                            columns=['y_bin'],
-                           aggfunc=aggfunc, # take the mean of the entries in the bin
+                           aggfunc=aggfunc, # take the mean or another function of the entries in the bin
                            fill_value=None)
 
     X=table.columns.values
@@ -69,6 +102,7 @@ def contourPlot(fdf,N,aggfunc,filename):
                      alpha=1.0, 
                      levels=10,
                      cmap=plt.cm.viridis);
+    ax.invert_yaxis()
     cbar = fig.colorbar(cs)
     plt.savefig('./'+filename+'.contour.png')
     plt.close()
