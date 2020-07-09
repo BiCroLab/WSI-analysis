@@ -33,9 +33,7 @@ def show_patch_from_polygon(filename,x_list,y_list):
     else:
         xx = np.array(x_list).reshape((len(x_list),1))
         yy = np.array(y_list).reshape((len(y_list),1))
-        #del x_list,y_list
         arr = np.hstack((xx,yy))
-        #del xx, yy
         arr -= np.mean(arr,axis=0).astype(int)
         mini = np.min(arr,axis=0)
         arr -= mini.astype(int) # subtract the min to translate the mask 
@@ -89,8 +87,8 @@ def measure_patch_of_polygons(filename,features):
     data = pd.DataFrame(columns = features) # create empty df to store morphometrics
     df = pd.read_csv(filename)
     if ~df.empty:
-        cc0 = float(os.path.basename(filename).split(sep='_')[0])
-        rr0 = float(os.path.basename(filename).split(sep='_')[1] )
+        cc0 = float(os.path.basename(filename).split(sep='_')[0]) # the x position is the col position
+        rr0 = float(os.path.basename(filename).split(sep='_')[1] ) # the y position is the row position
 
         for cell in df['Polygon'].tolist()[:]: # loop over cells in patch
             lista = list(np.fromstring(cell[1:-1], dtype=float, sep=':')) #list of vertices in polygon
@@ -105,27 +103,19 @@ def measure_patch_of_polygons(filename,features):
             poly -= mini # subtract the min to translate the mask 
             cc, rr = polygon(poly[:, 0], poly[:, 1], mask.shape) # get the nonzero mask locations
             mask[cc, rr] = 1 # nonzero pixel entries
-            
-            # rescale back to original coordinates
-            rr = rr.astype(float);cc = cc.astype(float)
-            rr += mini[0]; cc += mini[1]
-            rr += mean[0]; cc += mean[1]
-            rr += rr0; cc += cc0
-            
             label_mask = label(mask)
-            regions = regionprops(label_mask, coordinates='rc')
-            
-            #fig, ax = plt.subplots(figsize=(5,5))
-            #ax.imshow(mask, cmap=plt.cm.gray)
-            #plt.show()
+            try:
+                regions = regionprops(label_mask, coordinates='rc')        
+            except ValueError:  #raised if array is empty.
+                pass
             
             dicts = {}
             keys = features
             for i in keys:
                 if i == 'centroid_x':
-                    dicts[i] = regions[0]['centroid'][0]
+                    dicts[i] = regions[0]['centroid'][0]+cc0
                 elif i == 'centroid_y':
-                    dicts[i] = regions[0]['centroid'][1]
+                    dicts[i] = regions[0]['centroid'][1]+rr0
                 else:
                     dicts[i] = regions[0][i]
             # update morphometrics data 
