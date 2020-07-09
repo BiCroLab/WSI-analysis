@@ -20,6 +20,59 @@ from plotly.graph_objs import *
 from numpy.linalg import norm
 from scipy.sparse import find
 import matplotlib.pyplot as plt
+import os
+from skimage.draw import polygon
+from skimage.measure import label, regionprops#, regionprops_table
+
+# given the patch filename containing the polygon coordinates, generate morphometrics
+def process_patch_of_polygons(filename,features): 
+    data = pd.DataFrame(columns = features) # create empty df to store morphometrics
+    df = pd.read_csv(filename)
+    if ~df.empty:
+        cc0 = float(os.path.basename(filename).split(sep='_')[0])
+        rr0 = float(os.path.basename(filename).split(sep='_')[1] )
+
+        for cell in df['Polygon'].tolist()[:]: # loop over cells in patch
+            lista = list(np.fromstring(cell[1:-1], dtype=float, sep=':')) #list of vertices in polygon
+            cc = lista[0::2] # list of x coord of each polygon vertex
+            rr = lista[1::2] # list of y coord of each polygon verted
+            poly = np.asarray(list(zip(cc,rr)))
+            mean = poly.mean(axis=0) 
+            poly -= mean 
+            # create the nuclear mask
+            mask = np.zeros(tuple(np.ceil(np.max(poly,axis=0) - np.min(poly,axis=0)).astype(int))).astype(int) # build an empty mask spanning the support of the polygon
+            mini = np.min(poly,axis=0)
+            poly -= mini # subtract the min to translate the mask 
+            cc, rr = polygon(poly[:, 0], poly[:, 1], mask.shape) # get the nonzero mask locations
+            mask[cc, rr] = 1 # nonzero pixel entries
+            
+            # rescale back to original coordinates
+            rr = rr.astype(float);cc = cc.astype(float)
+            rr += mini[0]; cc += mini[1]
+            rr += mean[0]; cc += mean[1]
+            rr += rr0; cc += cc0
+            
+            label_mask = label(mask)
+            regions = regionprops(label_mask, coordinates='rc')
+            
+            #fig, ax = plt.subplots(figsize=(5,5))
+            #ax.imshow(mask, cmap=plt.cm.gray)
+            #plt.show()
+            
+            dicts = {}
+            keys = features
+            for i in keys:
+                if i == 'centroid_x':
+                    dicts[i] = regions[0]['centroid'][0]
+                elif i == 'centroid_y':
+                    dicts[i] = regions[0]['centroid'][1]
+                else:
+                    dicts[i] = regions[0][i]
+            # update morphometrics data 
+            new_df = pd.DataFrame(dicts, index=[0])
+            data = data.append(new_df, ignore_index=True)
+    data.to_pickle(filename+'.morphometrics.pkl')
+    return 
 
 # Show the log-log plot of the edge heterogeneity
 def plot_loglog(df,title):
