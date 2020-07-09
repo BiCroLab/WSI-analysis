@@ -24,8 +24,68 @@ import os
 from skimage.draw import polygon
 from skimage.measure import label, regionprops#, regionprops_table
 
+from skimage import io
+
+# Given the nonzero pixel values show the mask
+def show_patch_from_polygon(filename,x_list,y_list):
+    if not (x_list and y_list):
+        print('list is empty')
+    else:
+        xx = np.array(x_list).reshape((len(x_list),1))
+        yy = np.array(y_list).reshape((len(y_list),1))
+        #del x_list,y_list
+        arr = np.hstack((xx,yy))
+        #del xx, yy
+        arr -= np.mean(arr,axis=0).astype(int)
+        mini = np.min(arr,axis=0)
+        arr -= mini.astype(int) # subtract the min to translate the mask 
+
+        row = np.rint(arr[:,0]).astype(int)
+        col = np.rint(arr[:,1]).astype(int)
+        mtx = coo_matrix((np.ones(row.shape), (row, col)), dtype=bool)
+
+        plt.figure(figsize=(40,40))
+        io.imshow(mtx.todense(),cmap='gray')
+        plt.savefig(filename+'.png')
+    return
+
+# Given a list of patches of segmented nuclei in polygon format, show the masks
+def show_patches_parallel(filename):
+    x_list = []
+    y_list = []
+    df = pd.read_csv(filename)
+    if ~df.empty:
+        cc0 = float(os.path.basename(filename).split(sep='_')[0])
+        rr0 = float(os.path.basename(filename).split(sep='_')[1] )
+
+        for cell in df['Polygon'].tolist()[:]: # loop over cells in patch
+            lista = list(np.fromstring(cell[1:-1], dtype=float, sep=':')) #list of vertices in polygon
+            cc = lista[0::2] # list of x coord of each polygon vertex
+            rr = lista[1::2] # list of y coord of each polygon verted
+            poly = np.asarray(list(zip(cc,rr)))
+            mean = poly.mean(axis=0) 
+            poly -= mean 
+            # create the nuclear mask
+            mask = np.zeros(tuple(np.ceil(np.max(poly,axis=0) - np.min(poly,axis=0)).astype(int))).astype(int) 
+            mini = np.min(poly,axis=0)
+            poly -= mini # subtract the min to translate the mask 
+            cc, rr = polygon(poly[:, 0], poly[:, 1], mask.shape) # get the nonzero mask locations
+            mask[cc, rr] = 1 # nonzero pixel entries
+            # rescale back to original coordinates
+            rr = rr.astype(float);cc = cc.astype(float)
+            rr += mini[0]; cc += mini[1]
+            rr += mean[0]; cc += mean[1]
+            rr += rr0; cc += cc0
+            
+            # update the list of nonzero pixel entries
+            x_list.extend( [int(n) for n in list(rr)] ) 
+            y_list.extend( [int(n) for n in list(cc)] )
+            
+        show_patch_from_polygon(filename,x_list,y_list)
+    return
+
 # given the patch filename containing the polygon coordinates, generate morphometrics
-def process_patch_of_polygons(filename,features): 
+def measure_patch_of_polygons(filename,features): 
     data = pd.DataFrame(columns = features) # create empty df to store morphometrics
     df = pd.read_csv(filename)
     if ~df.empty:
