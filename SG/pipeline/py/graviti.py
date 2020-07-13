@@ -180,12 +180,11 @@ def plotlyContourPlot(fdf,filename):
     fig.show()
     return
 
-def contourPlot(fdf,N,aggfunc,filename):
-    # Contour visualization
+def contourPlot(fdf,N,aggfunc,filename): # Contour visualization
     ratio = fdf.max()[0]/fdf.max()[1] # ratio of max x and y centroids coordinates
     Nx = int(round(ratio*N))
-    fdf['x_bin'] = pd.cut(fdf['cx'], Nx, labels=False) # define the x bin label
-    fdf['y_bin'] = pd.cut(fdf['cy'], N, labels=False) # define the y bin label
+    fdf['x_bin'] = pd.cut(fdf['centroid_x'], Nx, labels=False) # define the x bin label
+    fdf['y_bin'] = pd.cut(fdf['centroid_y'], N, labels=False) # define the y bin label
 
     # define the pivot tabel for the contour plot
     table = pd.pivot_table(fdf, 
@@ -248,8 +247,8 @@ def get_fov(df,row,col):
 
 def edge_diversity_parallel(node,neightbors,diversity,fdf):
     edge = []
-    node_arr = fdf.iloc[[node]][['cx','cy']].to_numpy()
-    nn_arr = fdf.iloc[neightbors][['cx','cy']].to_numpy()
+    node_arr = fdf.iloc[[node]][['centroid_x','centroid_y']].to_numpy()
+    nn_arr = fdf.iloc[neightbors][['centroid_x','centroid_y']].to_numpy()
     centroid = 0.5*(node_arr+nn_arr)
     array = np.hstack((centroid,diversity.reshape((diversity.shape[0],1))))
     edge.extend(array.tolist())
